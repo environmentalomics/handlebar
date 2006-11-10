@@ -1,0 +1,63 @@
+This information is taken from the Newcastle University Bioinformatics support Unit FAQ:
+http://bsu.ncl.ac.uk/faq.php?cat_id=10
+
+Thanks to Dan Swan for testing the software and supplying this document.
+
+===
+
+How can I install Handlebar on Mac OS X?
+We have successfully installed Handlebar the barcoding database on Mac's in the Unit. Here is a comprehensive guide to doing so:
+
+Installing Handlebar on OSX 10.4.7
+
+First of all you wont get anywhere without a working PostgreSQL installation.
+
+Follow these instructions to the letter (and make sure you have fink installed (http://fink.sourceforge.net/):
+
+http://developer.apple.com/internet/opensource/postgres.html
+
+(note this uses an old version of PostgreSQL. At the time of writing the correct postgres source tarball is here: ftp://ftp5.us.postgresql.org/pub/PostgreSQL/source/v8.1.4/postgresql-8.1.4.tar.gz)
+
+
+   1. wget http://genomics.nox.ac.uk/~tbooth/genquery_1.1.0-7.tar.gz
+   2. wget http://genomics.nox.ac.uk/~tbooth/handlebar_1.1.0-4.tar.gz
+   3. tar -zxvf handlebar_1.1.0-4.tar.gz
+   4. tar -zxvf genquery_1.1.0-7.tar.gz
+   5. sudo perl -MCPAN -e shell (assumes CPAN is correctly set up)
+   6. At the prompt type:
+
+      (these prequisites cover genquery and handlebar packages)
+
+      install CGI
+      install IO::String
+      install HTML::Template
+      install CGI::Application
+      install CGI::Application::Plugin::Forward
+      install String::Tokenizer
+      install XML::Simple
+      install XML::Writer
+      install YAML
+      install Text::CSV_XS
+      install DBD::AnyData (this will install AnyData and SQL::Statement as prereqs)
+      install Config::Simple
+      install Mail::Mailer
+      install Spreadsheet::WriteExcel
+      install Spreadsheet::ParseExcel (this will install OLE::Storage_Lite as prereq)
+      install DBD::Pg
+
+   7. cd genquery-src
+   8. sudo cp -R perl5/* /Library/Perl/5.8.6/
+   9. sudo mv www/ /Library/WebServer/Documents/genquery
+  10. cd ../handlebar-src
+  11. sudo mkdir /usr/share/handlebar
+  12. sudo mv www/ /Library/WebServer/Documents/handlebar
+  13. sudo mv cgi-bin/ /Library/WebServer/CGI-Executables/handlebar
+  14. sudo mv ./share/genquery/ /usr/share/handlebar/
+  15. su - postgres
+  16. psql < /Users/[your_directory_to_handlebar]/handlebar-src/share/handlebar.sql
+  17. exit
+  18. sudo vim /Library/WebServer/CGI-Executables/handlebar/barcodes.conf
+  19. Edit Title, Description, Messsage and Page Maintainer as necessary
+  20. Open the System Preferences. Go to 'Sharing'. Turn on 'Personal Web Sharing' (and associated Firewall setting)
+  21. Point Safari to http://localhost/cgi-bin/handlebar/request_barcodes.cgi
+  22. Enjoy your new barcoding system

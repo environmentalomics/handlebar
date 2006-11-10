@@ -1,0 +1,5 @@
+# Tell the user:
+
+1. Open the file in OpenOffice.org
+2. If asked about running the macros, say yes
+3. Follow the instructions on the screen

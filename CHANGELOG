@@ -1,0 +1,489 @@
+No changes are recorded up to the November 1st meeting.  Some important ones just made are:
+
+Nov 3rd:
+
+Add tables requested by working group
+Add a generic table from which others inherit
+Add a concept of a default comment and default flags for given fields, to save duplication in database
+Fields are now shown without underscores for clarity (*unfinished)
+Munging of SQL type names to something more like plain English
+Things flagged as barcode now appear as type 'barcode'
+Things flagged as 'demote' go to the end of the table (*unfinished)
+You can customise the type report by feeding a list of types into the URL
+
+Added manifest:
+tar -cvf barcode.tar --files-from MANIFEST
+
+------------------
+TODO:
+
+Ranges for disposal need to be colon-delimited, not hyphen-delimited.
+Allow stray hyphens in all barcodes, and show them where necessary. - This is a big job!
+Allow a comment when a code is disposed.
+Make people give a user name for all edits, including disposal:
+
+--  Right, the rationale here is that if you are disposing of a load of samples
+    after, say, 3 years, you don't want to faff around tracking down who owns them
+    or what block they are in in order to do the disposal.  On the other hand, you
+    don't want people treading on each other's toes and deleting the wrong stuff. 
+
+    General solution is: 
+    Flag in config file 'STRICT_USER_NAMES'.  If set, you must give the user name for
+    disposal, download, file upload and printing.  If not set, then these will
+    rules will be relaxed, and the user name box will vanish from the upload and
+    disposal sections.  That should keep everyone happy.
+
+Look into moving to mod-perl, once the code is stabilised, to save load on Envgen.
+Testing would be crucial!
+
+Also, set up Apache so the default page is the query page.
+
+Add the ability to steal a block of barcodes froma user.
+
+Do something better with disposed codes on CSV download.  Add an option to:
+
+Include
+Omit
+Mask (probably with --)
+
+-----------------
+
+Update on 8/11:
+
+Ranges with colons are done.
+Comments on disposed codes, and available via query interface.
+STRICT_USER_NAMES now implemented for everything but printing.  Cursory test looks OK.
+
+TODO:
+For the barcode viewing as 00-012345 instead of 12345:
+Query input *
+Query output (code and linked codes) *
+Query max code *
+All inputs for main form *
+Scrolling list *
+CSV request *
+CSV request reports *
+CSV output *
+CSV output in links *
+CSV output in empty lines *
+CSV input *
+CSV input in links *
+A whole load of error messages...
+Printing bits :
+Still being written anyway...
+
+---------------
+
+TODO : add a hidden flag to tables, which hides the type from the dropdown and
+adds a note in the list in describe types.
+
+Update on 9/11:
+ 
+Removal of underscores in barcode types view:
+Accept CSV with spaces in headings. *
+Generate CSV with spaces in the headings. *
+No underscores in type selection dropdown *
+Accept input from dropdown without underscores *
+Make sure labels in type report still get found *
+No underscores in blocklists *
+Or when a barcode is first allocated *
+Or in query interface * (fixed various bits)
+
+---
+
+On 10/11:
+
+Made bcdescribetype report a proper error if called with nonexitent type. (Useful for debugging only as this should be caught well before this gets called)
+In general turned 'die' into 'confess' in barcodeUtil se we can get some nice stack trace output in the browser.
+
+Added the option to select how disposed lines are treated in CSV.  This entails having the download as a button rather than a link, but it kills off a load of JavaScript which is probably for the best.
+
+On 11/10:
+
+Added support for a 'hide' flag.  Hidden types cannot be selected from the dropdown, so they cannot be allocated.  (Assuming you don't feed in the parameter manually!)  A message is added to say that the type is unavailable when you look up the type description.
+
+Added a link to print the barcodes alongside the one to download the CSV that appears when you have just allocated a block.
+
+Fix up printing script - all done
+Remove some extraneous <hr> tags. - Done
+
+Add a box for user to give e-mail address. - yes.
+
+On 14/11:
+
+Apache setup so that you can just do:
+
+http://envgen.nox.ac.uk/test_barcode
+Seems to be possible with Redirect in .htaccess
+
+Decided to leave the 'steal barcodes' feature until the next release.  This can be done manually for now if need be.
+
+Wow, I think we are actually getting somewhere!  Added a master query interface which sees all databases.
+This is just the regular query interface code with the MASTER_SEARCH param set to nn, where nn is the number of databases to search.  Now for each database you must provide LOW_CODE_nn and HIGH_CODE_nn to delimit the codes that database deals with.
+You may also override DATABASE_*, DATA_SCHEMA, PREFIX_LENGTH, POSTFIX_LENGTH, SPACER_CHAR by appending _nn to the parameter name.
+
+On 16/11:
+
+Finished, I reckon!  All the known bugs and issues are swatted, and I have made it look pretty (ish).
+If my users want a custom stylesheet then they can go ahead and make one for themselves.
+(If they want the old basic stylesheet it is in the CVS at version 1.2)
+Now need to:
+
+* Roll out to Envgen
+* Test on IE
+* Announce
+* Finalise the live databases
+* Finalise the types
+* etc...
+
+On 17/11:
+
+Cleared up some formatting and stylesheet issues which showed up with IE.
+Added descriptions into all the h1 headers
+Noted that the demote flag does not yet get picked up on the CSV export - need to fix this...
+*fixed
+
+On 23/11:
+Fix name given to downloaded CSV.  The barcodes needed quoting and the file should indicate the type of codes, since otherwise it is impossible to say what should be in the spreadsheet.  Most probably the thing should support header lines, so this can go on the TODO list:
+
+Fixed up bczapspaces_js to replace all spaces.
+
+On 25/11:
+TODO - allow a header line in the CSV upload, and include one in the download, to remind the user what the
+barcodes relate to etc.
+Provide alternative stylesheets, and make the demo system orange (demo systems should be orange!)
+Try out OpenOffice::OOCBuilder Spreadsheet::ReadSXC Spreadsheet::ParseExcel and generally make the
+system do output and input in alternative formats. - one for Milo
+Add some logging?  Maybe just enable logging on the server?
+Make the "please wait while processing" bit actually send the page in chunks - Milo knows how.
+Support the 'demote' flag in the query interface. - *done
+
+* Added a direct link to the Wiki for help
+* Added a little script to deploy the thing to envgen in one go (by cheating).
+
+On 6/1:
+
+Added notes on how to print from Windows.
+Added script for people to print on Windows.
+Made an orange stylesheet for use with the test system.
+
+Need to modify/review the help text on the printing page.
+
+Deadline for publication is end March - need a plan:
+
+1) Milo to work on Excel import/export
+2) Milo to install and document:
+    - Prerequisites (PG, Webserver with CGI)
+    - Dependencies (cgi modules)
+    - Installation (database initalization etc.)
+3) Live CD - basic setup.  How to persist the database?, see below.
+4) Debian packages.
+5) Maybe a web setup form?  I think we could construct one quite cunningly which
+   reads the configuration file. see note 2
+
+GenQuery) Can wait, a bit.
+
+Note 1:
+Rather than priming the database on the live CD, I would script it so that PG
+initialises from scratch on boot and the barcodes table is loaded in.  Now we can either:
+
+1 - Init the database on a USB stick so it persists.
+2 - Copy the database off a USB stick so that it can be loaded and saved.
+
+I prefer the former.  If a USB stick is detected it is mounted read/write.
+A directory is created 'barcode_database' into which PG inits.
+If the directory is already there the thing is picked up.
+The config file will be kept on the key also, so that new settings can be tried.
+If no media is found the config file/header/whatever is modified to show a warning
+that the database is non-persistent.
+Hmmm I am liking this!
+
+Note 2:
+If we can just display the current config file on screen and
+let the user modify it, then save.  Only problem is to authenticate
+the user.  Note that the config file is regarded as 'trusted' so this needs
+to be secured - what authorization scheme might be appropriate?.  
+Maybe just put the password in the config file?
+Can we even allow the config file 
+to be modified via the web interface or should it be locked down?
+Maybe this is a bad idea - just make sure the file is somewhere easy to 
+get to and have a shortcut to edit the file.
+
+9/1/06:
+
+Jon Ball noted that insertion of 'M' into a field only allowing 'm/f' produces a confusing message.  Can I give a better indication of what failed the 'check' constraint? - *yes, by renaming the check constraint in the DB
+
+11/1/06:
+
+Have got the new I/O library plumbed in and fixed some glitches with the output formatting.
+
+You now get a header line and type descriptions. - Thanks to suggestion from Milo
+Made the query interface pick up the 'demote' flag.
+Note that due to my  crufty programming the demoted columns will be reversed - ie the first 
+of the demoted columns will be the last shown in the CSV, but this is good for me.
+Made the query page not blank the input box - rather select the contents.
+
+TODO - support SET DATESTYLE on connect to show dates in a nicer format.
+Unfortunately this does not work :-(  If this is to be done it will need a 
+Perl function to munge every date.  Easy to write but so many places to put it...
+
+12/1/06:
+
+Since I need to get this running on Joe's laptop I thought I would compile some dependencies:
+
+apache or httpd-cgi
+perl
+libdbd-pg-perl
+libdbd-anydata-perl
+libconfig-simple-perl
+libio-string-perl
+libmailtools-perl (only for printing)
+libtext-csv-perl
+
+CGI stuff in /usr/lib/cgi-bin/barcoder directory
+stylesheet in /var/www/barcoder
+
+System setup - we have user documentation, and this file is currently serving as developer documentation.  But we need an administrators guide.
+
+To go in WIKI:
+
+Please read the requirements carefully before attempting to install this software.
+
+You will need a web server capable of serving Perl CGI scripts.  The reccommended system is Debian
+GNU/Linux with Apache, for which a .deb package is available, but the software should run happily on any modern 
+Unix and even Windows (untested) if installed manually.  The software requires a database to store the
+barcode definitions and metadata.  It has been
+developed for PostgreSQL 7.3/7.4 and should also work with 8.x. It will not currently run on other
+databases such as MySQL or Oracle nor will it run under mod-perl.*
+You must have at least the following Perl modules available in addition to the standard environment:
+...
+
+*If you are interested in porting the system I would be very interested to hear from you.
+
+Quick Debian setup:
+
+When you install the package, it will attempt to put all the scripts in the correct locations and
+will also offer to setup the database.  The database setup script naively assumes that you have a
+pristine installation of PostgreSQL and that the server is running.  If this is not the case then
+you will have to do the setup manually - see below.
+
+
+Setting up the CGI scripts:
+
+Untar the tarball and run 'su -c ./install.sh'
+
+Database setup:
+
+You should have a basic grasp of PostgreSQL server administration in order to set
+up the database.  Such material is outside the scope of this guide but the relevant
+manuals are on the PG site:
+http://www.postgresql.org/docs/7.4/interactive/index.html
+
+By default the database will be owned by the user 'postgres', which is the standard PostgreSQL
+administrative user.  The webserver runs as user 'www-data' and so a corresponding user will
+be created in PostgreSQL.  This user has limited access to the database.
+If the standard setup is acceptable simply do:
+
+root@server# su -c 'psql -f barcodedb.sql' postgres
+
+If this fails this probably indicates that you do not have the default PostgreSQL setup.  You will probably need to create the
+database and www-data user manually.  You may need to change the way the PostgreSQL authenticates
+users and/or specify a username and password in the barcodes.conf file.
+
+Edit config file (point the user to this)
+
+##Make sure the default config works with the default server setup
+##Make sure the program cam connect without a hostname via UNIX socket - *done
+
+Now point a browser at:
+
+http://localhost/cgi-bin/barcodebase/bc
+
+13/1/06: Added a new stylesheet and stuff in pubrelease folder.  This can be used to make the package.  
+Will now build all the debian stuff within that folder.
+
+16/1/06: 
+
+TODO - Add print links to the typedefs to print whole page or (if possible) just one definition.
+TODO - Add a configurable message to be displayed at the top of the request_barcodes form so I can say "please edit the config file" - done!
+
+17/01/06:
+
+Due to Config::Simple problems on Joe's machine I added a loop to catch all empty config entries.
+Also allowed database connection to report an internal DBI error, which would have shown up the problem more quickly.
+
+Added a 'no users registered' message when there are no users.
+
+23/01/06:
+
+The package is now done.  Just make a final version with the minor changes and the new database, then
+test on 1 more machine, test update and roll it out (ie notify the mailing list and Swainsbury).
+
+TODO - ask what he wants to do regarding printing
+
+Added CVS version headers to all files and cleaned up
+Caused date header to say "date (yyyy-mm-dd)" instead of just date
+Caused printing page to get more stuff from config file, and added a flag to disable printing entirely
+Using the barcodes.conf from the package as the new barcodes.conf.sample
+Made sure the only references to the NEBC/Tim Booth are in the config file or part of
+comments or authorship attributions in the code.  This makes the system clean for release.
+
+TODO - make sure I have not stuffed up printing (check while testing package) - *looks OK
+Fixed database creation to only be attempted on new install
+package v1.2-2
+
+Added footer to config files list
+Added info from above to Wiki
+
+On 3/2/06:
+Noticed that bcdequote returns 0 if called with an undefined value.  This means that null barcodes in linking fields get logged as 0 in the database when CSV is uploaded.  Very simple fix - return undef instead of 0.
+
+On 20/2/06:
+Milo will add the code to check which format is required for download. (Add a dropdown and then check for the returned value).  Use cvs diff and make sure he has not been naughty.
+Make sure that the allocation-block comment shows up in the barcode query. - *yes it does
+
+On 27/2/06:
+Fixed a stupid error caused by the infamous Config::Simpleton
+Fixed up request_barcodes to allow input format to be specified.
+
+On 8/3/06:
+Merged Milo's XLS import/export stuff.  Fixed a few warnings.  Waiting for OO import then repackage and slam on Live CD.
+
+On 18/4/06:
+After neglecting this for some time in favour of GenQuery:
+
+Package ready and sent to Stewart.
+Added a hack to send a 'd12' at the start of each EPL file to make labels darker.  This seems to be right for most people.
+Need to add a config option to save all uploaded files.
+Need to fix the top menu to integrate with GQ.
+Then dump database, roll out and test, send mail.
+
+On 19/4/06:
+
+Added the logging option.  It saves the uploads as well as allocations, disposals and any errors.
+Each event goes in a sequential file. Should make my life easier.
+
+Spotted an issue with Milo's Excel processor.  Dates come out as integers :-(
+Need to spot which columns are dates (by querying the spreadsheet object), then use
+Date::Calc to convert them to what I want.  Also remember to add the dependency on libdate-calc-perl and to note it in the Wiki.
+-Update: Milo will look at the issue.  Apparrently there is an 'official' way to sort this out.
+
+On 21/4/06:
+
+Turn out this boils down to OpenOffice using capitals for the date format string.  ParseExcel does not like it.
+With a bit of cunning subclassing I now have dates being forced into yyyy-mm-dd format which should be
+pretty robust.  Yay.
+
+Added a flag to display the report link in the navigation banner.
+This will also make some other links appear for convenience
+
+On 21/4/06:
+
+May want to get the 'steal codes' feature up and running
+Also noticed a problem with Excel import - ingteger comes out as the word GENERAL - need to check up.
+*That was down to Spreadsheet::ParseExcel - installed the Etch package to remedy it.
+Also there was another problem spotted, but I can't for the life of me remember what it was.  Might spot it again tomorrow.
+
+On 10/5/06:
+
+Modified the behaviour when text cells (ie not a decimal, date or integer) are exported to Excel - added the line:
+push( @formats, {-num_format => "@"});
+That should stop Excel messing with my formats ;-)
+
+On 11/5/06: 
+
+Also fiddled the alignments for text and dates because OOo has issues when a string looks like a number and it looks weird.
+
+Plan for extra functions:
+1 - Add a printing link or just a pointer to the front page because people don't look at the top.
+2 - Add advanced admin features:
+steal
+split
+grow/shrink
+type convert (with force)
+also
+* Updating user details like e-mail address
+* Changing ownership of a block of codes
+* Undoing disposal within a set period of time
+* De-allocating unused codes (maybe) 
+
+On 8/6/06:
+
+Changed DISABLE_PRINTING to ENABLE_PRINTING for consistency - watch for config when
+deployed.
+
+On 23/8/06:
+
+Modified the printing script to allow data to be extracted from the DB and added to the labels as extra text.  The 
+data to print (up to 12 letters at current size) is determined by the 'print' flag being added to a column, which hints
+to the script what to pick up.  Of course, this means the user must fill in and submit all the data prior to label
+printing.
+
+On 7/9/06:
+
+Changed nerclogo40.pcx to be labellogo40.pcx as it is is only NERC for some codes.  I probably said this before, but note
+that files saved direclty from GIMP won't work as they actually get saved with a 256 colour pallette.  You need to run
+'mogrify labellogo40.pcx' to magically fix the file.  Also the image height is 42px not 40!
+Provided NEBC and CEH logos in addition to NERC and Tux.
+
+On 11/9/06:
+
+Modified CSS to make the navigation buttons at the top a little clearer (hopefully!)
+
+I want to make it easier to run multiple instances of Handlebar on one machine without copying the code or having
+a symlink farm.  Had the idea that I could load a different config based on the starting directory and thus have
+all symlinks pointing to one set of code, but the problem is that I can't get the .htaccess settings right if I do that.
+
+Second option is to use the .htaccess and determine the settings from the login.  This is no good because I want to be able to
+access all the databases at once.
+
+Other options either require major URL munging or config re-writing.  More thought needed.
+
+On 12/9/06:
+
+Now looking into the UNICODE issue.  This would be good to fix, but I notice that:
+
+I'm serving web pages in iso-8859-1
+CSV is most likely operating in iso-8859-15 (the special Euro variant), as is my terminal
+Perl works in utf8 if it feels like it
+The database runs in SQL_ASCII
+Excel uses who-knows-what!
+
+In other words, what a mess!  But UNICODE for the database and the web pages is definitely the way
+to go, I feel.  Unfortunatlely this causes problems because DBD:Pg (and DBI in general) does not do
+unicode properly.  And since the spreadsheets aren't unicode it seems best to stick in ISO-8859-x.
+On the other hand, I have added a client encoding fix so that the database client encoding should
+be locked to the same charset as the web page, so you can make a unicode DB if you like..
+
+On 21/9/06:
+Tested integration with the new new GenQuery and sorted out templates etc. to go into packgae, so that
+installing bio-linux-handlebar now gives reports out-of-the-box.
+
+On 10/10/06:
+Much improved stylesheets and better consistency in various bits of text, titles, etc.
+Finished important parts of the Extra Admin interface, so this is now ready to go in the package for 2.0.
+
+On 13/10/06:
+Wrestled with subversion to try and get all the relevant build scripts in the repository without getting .svn
+files in the package.  Harder than it looks!
+Note to self: to checkout HB do:
+svn checkout --username timbooth https://svn.sourceforge.net/svnroot/handlebar
+To upload files to SF do:
+ftp anonymous@ftp.sourceforge.net
+>bin
+>put file
+
+On 20/10/06:
+Realised that IE stuffs up stylesheets.  Fixed again.
+Spotted a bug in the Extra Admin with dealloctaion - fixed that too.
+
+on 23/10/06:
+Fixed some GenQuery stuff, now relevant to HB. - Specifically had to use JS glue to make it work on IE.
+
+on 27/10/06:
+Fixed the table exporter under Extra Admin, which was doing some crufty stuff.
+
+on 10/11/06:
+Updated queries and item types in default database to make for a better initial setup.  Stewart made
+new DVD with this package on, so I'm calling it version 2.0.1 and checkpointing it in SVN, ready for 
+resubmission of paper.

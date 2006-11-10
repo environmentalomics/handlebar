@@ -1,0 +1,50 @@
+#barcodes.conf - created Fri Sep 30 09:36:16 2005
+#
+# This is a config file for the barcode system.  Read it using Config::Simple
+#
+# This sample file demonstrates how to enable the master query mode over all databases.
+# The file still needs to e called barcodes.conf, but the MASTER_SEARCH parameter
+# tells query_barcodes that it should go into multi-database mode.
+
+PAGE_TITLE: Master query for all barcode databases.
+PAGE_DESC: Query multiple databases
+
+#This is the important one.  Set it to the number of databases in use, then
+#set parameters for the databases below.
+MASTER_SEARCH: 3
+
+#Display all codes in the form 00-000000
+#These will be the defaults used in the script, but
+#you can override these on a per-database level, if you wish.
+PREFIX_LENGTH: 2
+POSTFIX_LENGTH: 6
+SPACER_CHAR: -
+
+#The standard data schema and connection bumph, also 
+#overridable per database.  I assume you at least want to set
+#DATABASE_NAME_xx for each one.
+DATA_SCHEMA: data
+
+DATABASE_HOST: localhost
+DATABASE_USER: www-data
+DATABASE_PASS: 
+DATABASE_NAME: undef
+
+#Databases are numbered from 1.  For each of the databases you must at least
+#give the high and low codes.  A label is also a good idea - (note that you 
+#cannot set a default label, nor can you override the PAGE_TITLE or PAGE_DESC.)
+DATABASE_NAME_1: test_barcode
+LABEL_1: Test database
+LOW_CODE_1: 0
+HIGH_CODE_1: 999999
+
+DATABASE_NAME_2: handlebar1
+LABEL_2: Production database 1
+LOW_CODE_2: 01-000000
+HIGH_CODE_2: 01-999999
+
+DATABASE_NAME_3: handlebar2
+LABEL_2: Production database 2
+LOW_CODE_3: 02-000000
+HIGH_CODE_3: 02-999999
+

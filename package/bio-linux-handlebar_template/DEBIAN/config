@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+# Just one question to ask - do you want to set up the database?
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+# Do you want your database setup for you?
+db_input medium bio-linux-handlebar/attempt_dbsetup || true
+db_go
+
+true

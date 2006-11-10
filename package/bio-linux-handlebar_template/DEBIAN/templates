@@ -1,0 +1,19 @@
+Template: bio-linux-handlebar/attempt_dbsetup
+Type: boolean
+Description: Attempt to auto-configure the database?
+ If you have a PostgreSQL server running on this system then it can be auto-configured to host the barcode database.  If the server does not support 'ident sameuser' identification then this will fail, but the default Debian installation should be amenable to the automatic setup.
+
+Template: bio-linux-handlebar/dbsetup_success
+Type: note
+Description: Database has been instantiated.
+ A new user named "www-data" has been created and a database named "handlebar" has been populated.
+
+Template: bio-linux-handlebar/dbsetup_fail
+Type: note
+Description: Database could not be instantiated.
+ For some reason the script was unable to connect to PostgreSQL or did connect but could not create the database.  You will need to setup the database manually.
+
+Template: bio-linux-handlebar/dbsetup_already
+Type: text
+Description: Database already exists.
+ It seems that the database has already been successfully created.

@@ -1,0 +1,8 @@
+#!/bin/sh
+#Push the thing out to EnvGen.  Will prompt for the manager@envgen password.
+
+#This is now superceded by the package mechanism.
+tar -cvf barcode.tar --files-from MANIFEST
+cp barcode.tar /home/tbooth/public_html
+echo "Please give password for manager@envgen when prompted"
+ssh manager@envgen 'wget -q -O - http://ivpcp044/~tbooth/barcode.tar | tar -xvv -C /usr/lib/cgi-bin/test_barcode'

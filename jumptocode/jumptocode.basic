@@ -1,0 +1,124 @@
+REM  *****  BASIC  *****
+
+Sub Main
+    jumptocode
+End Sub
+
+Sub HelloWorld
+	Print "Hello world!"
+End Sub
+
+sub jumptocode
+rem ----------------------------------------------------------------------
+rem define variables
+dim document   as object
+dim dispatcher as object
+rem ----------------------------------------------------------------------
+rem get access to the document
+document   = ThisComponent.CurrentController.Frame
+dispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+
+rem -- Barcode is always in first column, or we could search for it
+rem -- First three lines are blank, or should I be flexible?
+
+dim iTopOfRange as Integer
+dim iBottomOfRange as Integer
+dim iCurrentCell as Integer
+dim iTargetCodeStr as String
+dim iThisCodeStr as String
+dim iTargetCode as Long
+dim oSheet as Object
+dim oController as Object
+dim oCell as Object
+dim iv as Long
+dim cs as Object
+
+'Pop up an InputBox to get target code
+iTargetCodeStr = InputBox ("Enter or scan barcode to jump to", "Goto")
+
+'Remove any hyphen characters from that input
+removechar("-", iTargetCodeStr)
+
+iTargetCode = int(iTargetCodeStr)
+if(iTargetCode <= 0) then goto alldone
+
+iTopOfRange = 3 'fudged - maybe I should start at 2 and skip one if blank?
+iBottomOfRange = 5000
+cs = ThisComponent.CurrentSelection
+oSheet = cs.SpreadSheet
+
+oController = ThisComponent.CurrentController
+
+' A binary search, no crude scan for me.
+do while iTopOfRange <= iBottomOfRange
+
+	iCurrentCell = int((iTopOfRange + iBottomOfRange) / 2)
+    oCell = oSheet.getCellByPosition(0, iCurrentCell)
+
+	iv = -1
+
+	' Text cells are no good - or should I convert them?
+	if oCell.Type =  com.sun.star.table.CellContentType.TEXT then
+		'Try to convert string
+		iThisCodeStr = oCell.String
+		removechar("-", iThisCodeStr)
+		iv = int(iThisCodeStr)
+	elseif oCell.Type = com.sun.star.table.CellContentType.VALUE then
+		iv = oCell.Value
+	end if
+	
+	if iv > 0 then
+		if iv = iTargetCode then
+			' Select the cell to the right
+			oController.Select(oCell)
+			
+			dispatcher.executeDispatch( _
+				document, ".uno:GoRight", "", 0, _
+				Array( MakePropertyValue("By", 1), _
+					   MakePropertyValue("Sel", false) _
+				))
+				
+			goto alldone
+		elseif iv < iTargetCode then
+		    iTopOfRange = iCurrentCell + 1
+		else
+			iBottomOfRange = iCurrentCell - 1
+		end if
+	else
+		'no good
+		iBottomOfRange = iCurrentCell - 1
+	end if
+
+loop
+
+'If we failed, say so:
+Print "Could not find code: " + iTargetCode
+
+alldone:
+end sub
+'End of jumptocode
+
+sub removechar( badchar As String, byref target As String)
+dim pos as Integer
+pos = inStr( 1, target, badchar)
+do while pos > 0
+	target = mid(target, 1, pos -1) + mid(target, pos + 1)
+	pos = inStr( 1, target, badchar)
+loop
+removechar() = target
+end sub
+
+' The MakePropertyValue() function is defined here...
+'   http://www.oooforum.org/forum/viewtopic.php?t=5108
+'
+Function MakePropertyValue( Optional cName As String, Optional uValue ) As com.sun.star.beans.PropertyValue
+	oPropertyValue = createUnoStruct( "com.sun.star.beans.PropertyValue" )
+	If Not IsMissing( cName ) Then
+		oPropertyValue.Name = cName
+	EndIf
+	If Not IsMissing( uValue ) Then
+		oPropertyValue.Value = uValue
+	EndIf
+	MakePropertyValue() = oPropertyValue
+End Function
+

@@ -1,0 +1,93 @@
+# Default barcode system configuration.  This will work with the no-brainer
+# Debian installation but even in that case you will want to modify it to
+# your needs.
+#
+# For simplicity, this file lives in the same directory as the CGI scripts.  
+# A sensible Apache configuration (such as that supplied with Debian) will
+# prevent this file from being served up as text, but you should verify this,
+# especially if you set a DATABASE_PASS!
+#
+# This file is designed to be read using the Perl Config::Simple module
+
+# The title will appear in the browser title bar.  
+# The description will be shown in the main page heading.
+# The message, if given, will be shown under the heading on the request page.
+# You should also name the system admin for people to contact for support
+PAGE_TITLE: Handlebar
+PAGE_DESC: New barcode system
+PAGE_MESSAGE: <b>To customise this interface\, please edit the file /usr/lib/cgi-bin/handlebar/barcodes.conf</b>
+PAGE_MAINTAINER: The webmaster (webmaster@your-domain.ac.uk)
+
+#You can choose the stylesheet to use
+STYLESHEET: ../../handlebar/bcstyle.css
+
+#The PostgreSQL database connection params.
+DATABASE_HOST:
+DATABASE_USER: www-data
+DATABASE_PASS:
+DATABASE_NAME: handlebar
+
+DATA_SCHEMA: handlebar_data
+SYSTEM_SCHEMA: handlebar_sys
+
+#Max number of barcodes in one block:
+MAX_CODES: 1000
+
+#Round new ranges up to nearest 10:
+CODE_BLOCK_SIZE: 10
+
+#You can allocate the first block with a specified offset:
+MIN_BAR_CODE: 20-000000
+
+#Set this flag if you want to make sure that users must identify
+#themselves as the owner of the code for every operation:
+STRICT_USER_NAMES: 1
+
+#Display all codes in the form 00-000000
+#These setting will not necessarily be used by the printing script.
+PREFIX_LENGTH: 2
+POSTFIX_LENGTH: 6
+SPACER_CHAR: -
+
+#How do disposed codes get masked in the CSV?
+DISPOSE_MASK: --
+
+#You can get all the uploads logged to somewhere.  This is useful for
+#debugging since you don't have to get the user to send the file.  Also
+#for recovery since you can replay the files to get the data back.
+#If this is set, allocations, disposals and new users will also be logged.
+LOG_DIRECTORY: 
+
+#For the print feature:
+#Disabling printing simply removes the links to the printing feature.
+ENABLE_PRINTING: 1
+
+#Reports did not work for v1.0 as they required the GenQuery code
+#and supporting files which were pre-release
+#But for v1.1 GenQuery has been knocked into enough semblance of a shape
+#to be packaged and work with the Handlebar package
+ENABLE_REPORTS: 1
+#The admin interface is now available!
+ENABLE_ADMIN: 1
+#You can control what appears in the admin page and/or set a password.
+#ADMIN_FUNCTIONS: steal,usermod,blockmod,undispose,deallocate,export
+#PASSWORD_FOR_ADMIN:
+
+#What text goes on top of the printed labels?  Max 14 chars for small labels
+PRINT_TOPMESSAGE: Handlebar
+
+#The current printing page invites users to mail a central facility for printing.
+#Specify details here:
+PRINT_CENTRE: the printing facility
+PRINT_MAIL_RECIPIENT: the printing facility helpdesk
+PRINT_MAIL_ADDRESS: print-shop@your-domain.ac.uk
+
+#Send the mails out via SMTP?
+#Leave blank to let Mail::Mailer guess the best mail
+#application on the local machine.
+SMTP_SERVER:
+
+#For reports, where should GenQuery look for HTML templates?
+TEMPLATE_DIR:/usr/share/handlebar/genquery
+
+#End of configuration
