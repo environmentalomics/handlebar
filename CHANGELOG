@@ -467,7 +467,7 @@ On 13/10/06:
 Wrestled with subversion to try and get all the relevant build scripts in the repository without getting .svn
 files in the package.  Harder than it looks!
 Note to self: to checkout HB do:
-svn checkout --username timbooth https://svn.sourceforge.net/svnroot/handlebar
+svn checkout --username timbooth https://svn.sourceforge.net/svnroot/handlebar/trunk
 To upload files to SF do:
 ftp anonymous@ftp.sourceforge.net
 >bin
