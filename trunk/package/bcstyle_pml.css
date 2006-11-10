@@ -1,0 +1,257 @@
+/* Clean-looking stylesheet for the barcode DB 
+   There is also a basic stylesheet available.
+*/
+
+/* 
+ * I made a handy table format using the border style wizard:
+ *  http://www.somacon.com/blog/page41.php
+*/
+
+table.neat1 {
+	padding: 0 0 0 10px;
+	border-width: 1px;
+	border-spacing: 2px 2px;
+	border-style: none;
+	border-collapse: separate;
+	background-color: white;
+}
+table.neat1 th {
+	border-width: 1px;
+	padding: 3px 3px 3px 3px;
+	border-style: none;
+	font-family: serif;
+	font-size : smaller;
+}
+table.neat1 td {
+	border-width: 1px;
+	padding: 3px 3px 3px 3px;
+	border-style: none;
+	background-color: #EEEEEE;
+	font-size : smaller;
+}
+
+/* The formtable is used as a means to layout forms and should be borderless */
+
+table.formtable {
+	border-style:none;
+	border-spacing:6px;
+}
+
+table.formtable td {
+	padding: 3px 3px 3px 3px;
+}
+
+/* General text and links swiped from EnvBase as before */
+BODY {  
+    font-family: serif; 
+    color: #404040; 
+    text-align: left;
+}
+
+A         { color: #996600; text-decoration: none; }
+A:visited { color: #996600; text-decoration: none; } 
+A:hover   { color: #000066;  }
+A:active  { color: #000066;  }
+
+/* Error boxes are grey with red text */
+.errorbox {
+	color: red;
+	display: block;
+	background-color: #DDD;
+	padding: 3px 3px 3px 3px;
+}
+
+/* Alert box is similar but does not stretch to full width */
+.alertbox {
+        color: red;
+	background-color: #DDD;
+	padding: 3px 3px 3px 3px;
+}
+
+/* The top division and h1 title looks like the EnvBase header */
+BODY { margin:0px 0px 0px 0px;}
+
+#topbanner {
+	display: block;
+	background-color: #EEE;
+	border-top: 0px;
+	padding-top: 70px;
+	margin: 0 ;
+	border-bottom:3px dotted #FFF;
+	/*height: 120px; */
+        background-image: url(http://envgen.nox.ac.uk/images/plankton_banner.jpg);
+}
+
+
+#topbanner h1 {
+	font-family: serif;
+	font-size:20px;
+	/* font-weight:bold; */
+	text-align:center;
+	/*text-transform: uppercase;
+	 letter-spacing: .1em;
+	 */
+	padding:10px;
+}
+
+#topbanner h1 {
+	font:11px verdana, arial, helvetica, sans-serif;
+	 
+	font-size:28px;
+	font-weight:bold;
+	color:#444;
+}
+
+#logodiv_top {
+	width: 190px;
+	height: 96px;
+	display: block;
+	position: absolute;
+	float: right;
+	top: 4px;
+	right: 6px;
+	background: no-repeat left top;
+	background-image: url(handlebar_weblogo.png); 
+	border: 1px inset;
+	z-index: 1;
+}
+
+/* The navigation banner is like the one on our pages */
+.navbanner {
+	display: block;
+	background-color: #DFEDF3;
+	color: #000000;
+	font: 13pt "Tahoma", sans-serif;
+	/*letter-spacing: 0.02em;*/
+	margin: 2px;
+	padding: 6px 6px 6px 6px;
+	border-width: 1px;
+	border-style: solid solid solid solid; 
+	border-color: #DDDDDD #666666 #666666 #DDDDDD; 
+	/*width: 50em;*/
+	z-index:10;
+	position: absolute;
+	top: 2px;
+}
+
+.navbanner a {
+	color: #996600;
+	text-decoration: none;
+	padding : 2px 4px 2px 2px;
+	border-width: 0px 0px 0px 2px;
+	border-style: outset;
+	margin-left: 6px;
+}
+
+.navbanner a:visited { color: #996600; }
+.navbanner a:hover   { 
+    color: #000066; 
+    padding : 2px 2px 2px 2px;
+    border: 2px outset;
+}
+
+.navbanner_current a {
+	color: #999900;
+	text-decoration: none;
+}
+.navbanner_current a:visited { color: #999900; }
+
+.jumpto {
+	display: inline;
+	font: 13pt "Tahoma", sans-serif;
+	color: #000000;
+	line-height: 30px;
+	padding: 4px 6px 4px 6px;
+	text-align: left;
+	background-color: #DFEDF3;
+	border-color: #666; 
+	/*
+	border-width: 1px;
+	border-style: outset outset outset outset; 
+	border-color: #666; 
+	*/
+	border-width: 1px;
+	border-style: solid solid solid solid; 
+	border-color: #DDDDDD #666666 #666666 #DDDDDD; 
+}
+
+.jumpto a {
+	color: #996600;
+	text-decoration: none;
+	padding:3px 4px 3px 3px;
+	border-width: 0px 0px 0px 1px;
+	border-style: outset;
+	margin-left: 6px;
+}
+.jumpto a:hover   { 
+    color: #000066; 
+    padding : 1px 2px 1px 2px;
+    border: 2px outset;
+}
+
+#mainsection { margin:10px 10px 10px 10px; }
+
+/* h2 is used for the subheadings - base on .joeh2nomargin */
+h2 {	font: bold 11pt "Tahoma", sans-serif;
+	color: #222;
+	background-color: #DFEDF3;
+	line-height: 20px;
+	padding: 4px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	text-align: left;
+	/*text-transform: uppercase;*/
+	letter-spacing: .1em;
+	/*
+	border-color: #666; 
+	border-style: outset; 
+	border-width: 1px 1px 1px 1px;
+	*/
+	border-width: 1px;
+	border-style: solid solid solid solid; 
+	border-color: #DDDDDD #666666 #666666 #DDDDDD; 
+	padding: 0 0 0 6px;
+}
+
+/* To make these look good, kill off all HR tags (there is a reason why
+   all the books on CSS tell us to avoid these things. */
+hr {	width: 0%;  }
+
+#userreport{
+	font: 12pt sans-serif;
+}
+
+#typereport{
+	font: 12pt sans-serif;
+}
+
+/* h3 is found in the popups only */
+h3 {	font: bold 11pt "Tahoma", sans-serif;
+	color: #222;
+	background-color: #DFEDF3;
+	line-height: 20px;
+	padding: 4px;
+	margin: 8px 4px 8px 4px;
+	text-align: left;
+	/*text-transform: uppercase;*/
+	letter-spacing: .1em;
+	padding: 0 0 0 6px;
+	border-width: 1px;
+	border-style: solid solid solid solid; 
+	border-color: #DDDDDD #666666 #666666 #DDDDDD; 
+}
+
+/* h4 is used for items in the types list */
+h4 {
+    color: #404040;    
+    border-color: #CCCCCC;
+    border-style: solid;
+    border-width: 1px 0px 0 0px;
+    padding: 1px 0 0 0;
+    margin: 26px 0 6px 0;
+}
+
+/* Notes at the bottom of the page */
+#noteslist li + li{
+    margin-top: 0.4em; 
+}
