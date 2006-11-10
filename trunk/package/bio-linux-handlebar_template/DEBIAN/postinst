@@ -1,0 +1,59 @@
+#!/bin/sh -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+#Make the symlink
+ln -s request_barcodes.cgi /usr/lib/cgi-bin/handlebar/bc.cgi || true
+
+#And some more
+ln -s menu.template.html \
+    /usr/share/handlebar/genquery/query.template.html || true
+ln -s menu.template.html \
+    /usr/share/handlebar/genquery/results.template.html || true
+
+#Should I attempt to setup a DB?  Not on update:
+if [ "$1" != "configure" -o "$2" != "" ] ; then 
+    echo "Not attempting to create database as Handlebar was already installed" >&2
+    exit 0
+fi
+
+db_get bio-linux-handlebar/attempt_dbsetup
+if [ "$RET" = "false" ] ; then
+    exit 0
+fi
+
+#Right - the setup bit.
+fail()
+{
+    db_input medium bio-linux-handlebar/dbsetup_fail || true
+    db_go
+    exit 0
+}
+
+already()
+{
+    #db_input medium bio-linux-handlebar/dbsetup_already || true
+    #db_go
+    echo "Database already exists - it will not be created."  >&2
+    exit 0
+}
+
+success()
+{
+    db_input medium bio-linux-handlebar/dbsetup_success || true
+    db_go
+    exit 0
+}
+
+#Check basic connection
+su -c 'psql -c "select current_date" template1' postgres > /dev/null || fail
+
+#Check for existing database
+su -c 'psql -c "select current_date" handlebar' postgres >/dev/null 2>&1 && already
+
+#Try to run the script
+su -c 'psql -f "/usr/share/handlebar/handlebar.sql" template1' postgres > /dev/null || fail
+
+success
+

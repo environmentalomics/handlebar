@@ -1,0 +1,15 @@
+barcodeDB.pm
+barcodeUtil.pm
+bcstyle.css
+barcodes.footer.html
+labellogo40.pcx
+new_user_request.cgi
+print_barcodes.cgi
+query_barcodes.cgi
+report_barcodes.cgi
+request_barcodes.cgi
+TableIO.pm
+TableIO/base.pm
+TableIO/csv.pm
+TableIO/xls.pm
+zebraprint_bat.cgi

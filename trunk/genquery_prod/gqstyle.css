@@ -1,0 +1,209 @@
+/*
+ * Stylesheet extracted from GenQuery (EnvBase)
+*/
+BODY { margin:0px 0px 5px 0px;
+}
+
+#banner { font-family:verdana, arial, sans-serif;
+	color:#FFF;
+	font-size:20px;
+	font-weight:normal;
+	border-bottom:1px dotted #FFF;
+	background:#0099CC;
+	padding:15px;
+	text-transform:uppercase;
+	letter-spacing: .2em;
+}
+
+H2 { font-family:verdana, arial, sans-serif;
+	color:#666;
+	font-size:12px;
+	font-weight:bold;
+	background:#EEE;
+	line-height:20px;
+	padding:4px;
+	margin-top:10px;
+	margin-bottom:10px;
+	text-transform:uppercase;
+	text-align:center;
+	letter-spacing: .2em;
+}
+
+A { color: #999966;
+    font-family: verdana, arial, sans-serif;
+    font-size:13px;
+    text-decoration: none;
+}
+
+A:link { color: #996600;
+	 text-decoration: none;
+}
+
+A:visited { color: #999900; 
+	    text-decoration: none; 
+}
+
+A:hover { color: #000066;  }
+A:active { color: #000066;  } 
+
+H3 {  font-family: verdana, arial, sans-serif;
+      font-size: 14px;
+      font-style: normal;
+      line-height: normal;
+      font-weight: bold;
+      color: #003399;
+      background-color: #FFFFFF;
+      text-align: left;
+      margin-left:15px;
+}
+
+BODY {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 color: #666666;
+	 text-align: left;
+}
+
+.htable { border-color: #FFFFFF;
+	  border-style: none;
+	  font-family: verdana, arial, sans-serif;
+	  font-size: 13px;
+	  font-style: normal;
+	  color: #666666;
+	  text-align: left;
+	  margin-left:15px;
+	  margin-right:15px;
+	  border-spacing:6px;
+}
+
+.rtable { border-color: #888888;
+	  border-style: solid;
+	  border-collapse: collapse;
+	  border-width : 1px;
+	  font-family: verdana, arial, sans-serif;
+	  font-size: 13px;
+	  font-style: normal;
+	  color: #666666;
+	  text-align: left;
+}
+
+.rtable th { border-color: #888888;
+	     border-style: solid;
+	     border-width : 1px;
+	     padding: 2px;
+	     
+}
+
+.rtable td { border-color: #888888;
+	     border-style: solid;
+	     border-width : 1px;
+	     padding: 2px;
+}
+
+.menuheader {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 font-weight: bold;
+	 color: #FFFFFF;
+	 background-color: #CCCCCC;
+	 background-position: center center;
+	 text-align: center;
+}
+
+H1 {  font-family: verdana, arial, sans-serif;
+	 font-size: 16px;
+	 font-style: normal;
+	 line-height: 20px;
+	 font-weight: bold;
+	 color: #006699;
+	 text-decoration: none;
+	 text-transform: uppercase;
+	 background-position: left top;
+	 text-align: left;
+}
+
+.small {  font-family: verdana, arial, sans-serif;
+	 font-size: 9px;
+	 font-style: normal;
+	 color: #333333;
+	 text-decoration: none;
+	 line-height: 20px;
+}
+
+.webmaster {  font-family: verdana, arial, sans-serif;
+	 font-size: 10px;
+	 font-style: italic;
+	 font-weight: bolder;
+	 color: #333333;
+	 text-decoration: none;
+	 background-color: #FFFFFF;
+	 text-align: right;
+}
+
+.line {  background-color: #CCCCCC}
+.line {  color: #000000;
+	 font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 font-weight: normal;
+	 border-color: #CC66FF black black;
+	 border-top-width: medium;
+}
+
+H5 {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 font-weight: bold;
+	 color: #CCCC99;
+	 text-decoration: none;
+	 background-color: #003399;
+	 text-align: center;}
+
+.urls {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 font-weight: bold;
+	 color: #CC66FF;}
+
+.error { color: red;
+	 font-weight: bold;
+	 margin:10px}
+	 
+.poweredby {  font-family: verdana, arial, sans-serif;
+	 font-size: 9px;
+	 font-style: normal;
+	 font-weight: bolder;
+	 color: #000000;
+	 text-align: left;}
+	 
+H6 {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-style: normal;
+	 color: #006666;
+	 text-align: left;
+}
+
+.buttons {  font-family: verdana, arial, sans-serif;
+	 font-size: 14px;
+	 font-weight: bold;
+	 color: #006699;
+	 background-color: #CCCCCC;
+	 text-align: center;
+}
+
+.menu { font-family: verdana, arial, sans-serifa;
+	 font-size: 10px;
+	 font-style: normal;
+	 color: #006666;
+	 text-align: center;
+}
+
+.hblock { display: block; background-color: #DDDDDD; color: #000000 }
+
+/*
+ * The syles defined by GenQuery
+ */
+
+.gq_form_label { font-weight: bold; }
+
+.gq_form_table { border-spacing:6px; }

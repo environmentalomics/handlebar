@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#Try to remove all symlinks in /usr/lib/cgi-bin/handlebar/
+find /usr/lib/cgi-bin/handlebar/ -type l -delete
+
+true

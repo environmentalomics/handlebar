@@ -1,0 +1,58 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset=iso-8859-1" >
+    <link rel="stylesheet" type="text/css" href="http://envgen.nox.ac.uk/Templates/bcstyle_test.css" />
+    <style xmlns="" type="text/css">
+        <!--Put CSS overrides in here! -->
+    </style>
+
+    <title>EnvBase - The NEBC Data Catalogue</title>
+</head>
+<!--
+#       HTML template for GenQuery running on EnvBase
+#       Tim Booth Dec 2005.
+#
+#       After public_catalogue.php              J.Wood 11/8/04
+#       NERC Environmental Bioinformatics Centre
+#       http://nebc.nox.ac.uk
+-->
+<body>
+<div id="banner" align="center">
+
+<!--Banner-->
+<img src="http://envgen.nox.ac.uk/images/envbase.png" width="92" height="120" border="0" align="left">
+<img src="http://envgen.nox.ac.uk/images/menu.png" width="600" height="30" usemap="#Map2" border="0"><p>
+
+Login to EnvBase<br />
+<span class="description"></span>
+</div></center>
+
+<h2>Database Login</h2>
+
+<!-- For GenQuery to work, the template must supply a form with the method set
+     to POST.  Within the form GenQuery will supply a SAVED_STATE which should 
+     be included and a loop of LABEL, INPUT, NOTES.
+-->
+
+<div class="error">
+    <TMPL_VAR NAME="LOGIN_FAILURE_REASON">
+</div>
+
+<form method="POST">
+<TMPL_VAR NAME="SAVED_STATE">
+<table class="htable">
+    <TMPL_LOOP NAME="LOGIN_FIELDS">
+	<tr style="text-align:left;vertical-align:top">
+	    <td><b><TMPL_VAR NAME="LOGIN_FIELD_LABEL">: </b></td>
+	    <td><TMPL_VAR NAME="LOGIN_FIELD_INPUT"></td>
+	    <td><TMPL_VAR NAME="LOGIN_FIELD_NOTES"></td>
+	</tr>
+    </TMPL_LOOP>
+    <tr style="text-align:right">
+	<td colspan="2"><input type="submit" value="Login"></td>
+    </tr>
+</table>
+</form>
+
+</body>
+<!-- C'est ca! -->

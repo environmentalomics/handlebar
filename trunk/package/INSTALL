@@ -1,0 +1,75 @@
+This file contains some notes on how to install the software on platforms other
+than Debian GNU/Linux.
+
+We do not currently have the resources to maintain packages for other platforms
+or a generic installation script.  However I would welcome any offers of
+packages or improved installation notes if anyone is prepared to offer them.
+
+Instructions for Mac OS-X are in the INSTALL_mac file.
+
+Please also see our our support Wiki at:
+  http://darwin.nerc-oxford.ac.uk/pgp-wiki/index.php/Barcode_deployer_guide
+
+Steps to install:
+
+1) Prerequisites
+
+To run the system for yourself you will need a web server capable of serving
+Perl CGI scripts. The recommended system is Debian GNU/Linux with Apache, for
+which a .deb package is available from the Bio-Linux package repository, but
+the software should run happily on any modern Unix and even Windows (untested)
+if installed manually. The software requires a database to store the barcode
+definitions and metadata. It has been developed for PostgreSQL 7.3/7.4 and
+should also work with 8.x. It will not currently run on other databases such as
+MySQL or Oracle.
+
+For non-Debian systems, you will need to make sure you have the following:
+
+    * Perl 5.8
+    * A PostgreSQL server (need not be on the same machine as the web server)
+    * A working web server with CGI enabled
+    * These Perl modules, available from cpan.org:
+          o CGI
+          o DBD::Pg
+          o Text::CSV_XS
+          o DBD::AnyData
+          o Config::Simple
+          o IO::String
+          o Mail::Mailer (only needed for the printing module)
+          o Spreadsheet::WriteExcel
+          o Spreadsheet::ParseExcel
+   *  The GenQuery software, also from the NEBC.  This is needed if you want
+      to run reports via the web interface (optional).
+
+2) Install web content
+
+Inside the tarball there is a www directory.  Put these files in an appropriate
+location to be served by Apache.  The reccommended location is /var/www/handlebar
+
+There is also a cgi-bin directory.  These files need to go in a script-aliased
+directory, typically /var/www/cgi-bin/handlebar
+
+The default location where Handlebar looks for its stylesheet and graphics is 
+../../handlebar.  You may need to change this in the configuration file - see 4.
+
+3) Setup database
+
+Use the barcodebase.sql file in the share directory to create a database with
+the required tables.  Note that this script will create a new user under PostgreSQL,
+named www-data, with limited access to the system.
+
+4) Install the templates for GenQuery
+
+The share/genquery folder contains HTML templates used by the GenQuery report maker.
+Make a /usr/share/handlebar directory and copy the genquery folder into it.  If you 
+use a location other than /usr/share you will need to modify the TEMPLATE_DIR setting in
+the configuration file (see next step).
+
+5) Edit your copy of barcodes.conf (in the cgi-bin directory) to match your setup.
+
+See the comments in the file for more details.
+
+6) Try it - point a browser at http://localhost/cgi-bin/handlebar/request_barcodes.cgi
+
+This should be sufficient to get going, but due to the large range of possible configurations I cannot
+provide exhaustive instructions, so you may have to apply some cunning.  Good luck!

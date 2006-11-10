@@ -1,0 +1,52 @@
+/* 
+ * I made a handy table format using the border style wizard:
+ *  http://www.somacon.com/blog/page41.php
+*/
+
+table.neat1 {
+	border-width: 2px 2px 2px 2px;
+	border-spacing: 0px 0px;
+	border-style: ridge ridge ridge ridge;
+	border-color: gray gray gray gray;
+	border-collapse: collapse;
+	background-color: white;
+}
+table.neat1 th {
+	border-width: 2px 2px 2px 2px;
+	padding: 3px 3px 3px 3px;
+	border-style: ridge ridge ridge ridge;
+	border-color: gray gray gray gray;
+	background-color: rgb(255, 245, 238);
+}
+table.neat1 td {
+	border-width: 2px 2px 2px 2px;
+	padding: 3px 3px 3px 3px;
+	border-style: ridge ridge ridge ridge;
+	border-color: gray gray gray gray;
+	background-color: rgb(255, 245, 238);
+	font-size : smaller;
+}
+
+table.formtable {
+	border-style:none;
+	border-spacing:6px;
+}
+
+table.formtable td {
+	padding: 3px 3px 3px 3px;
+}
+
+/* Error boxes are grey with red text */
+.errorbox {
+	color: red;
+	display: block;
+	background-color: #DDD;
+	padding: 3px 3px 3px 3px;
+}
+
+/* Alert box is similar */
+.alertbox {
+        color: red;
+	background-color: #DDD;
+	padding: 3px 3px 3px 3px;
+}

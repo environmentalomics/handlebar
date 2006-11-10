@@ -1,0 +1,61 @@
+/*
+ * Graphical button stuff - each type of button is replaced by a graphic
+ */
+
+/*Common guff - the CSS hack, see http://www.ampsoft.net/webdesign-l/image-button.html */
+.icon {
+    /*Default size*/
+    width: 34px;
+    height: 34px;
+    padding-top: 34px;
+
+    padding-right: 0; padding-bottom: 0; padding-left: 0;
+    margin: 0;
+    border: 0;
+    display: block;
+    background: transparent no-repeat left top;
+    overflow: hidden;
+    cursor: pointer; /* hand-shaped cursor */
+    cursor: hand; /* for IE 5.x */
+}
+head:first-child+body .icon { /* For non-IE browsers*/
+  height: 0px;
+}
+/* end of hack */
+
+/* Settings for each icon
+ * You need to set the background property plus maybe the width/height/padding-top
+ * if the icons are different sized.
+ * Height must be explicitly set to equal padding-top.
+ */
+#category_normal {
+  background-image: url(arrow_right.png);
+}
+
+#category_selected {
+  background-image: url(arrow_down.png);
+}
+
+#query_1_selected {
+  background-image: url(bullet_open.png);
+}
+
+#query_1_normal {
+  background-image: url(bullet.png);
+}
+
+#query_2_normal {
+  background-image: url(link.png);
+}
+
+#query_3_normal {
+  background-image: url(info.png);
+}
+
+#logout {
+  background-image: url(cross.png);
+}
+
+#main_menu {
+  background-image: url(arrow_left.png);
+}

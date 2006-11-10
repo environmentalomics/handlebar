@@ -1,0 +1,9 @@
+<!--The following directives enable use of a popup calendar control for date entry. -->
+<!--The files need to be available in the appropriate location -->
+<!--As the script is big, only invoke it if the date picker is actually used-->
+<TMPL_IF name="DATE_PICKER_USED">
+  <style type="text/css">@import url(/genquery/cal/calendar.css);</style>
+  <script type="text/javascript" src="/genquery/cal/calendar.js"></script>
+  <script type="text/javascript" src="/genquery/cal/lang/calendar-en.js"></script>
+  <script type="text/javascript" src="/genquery/cal/calendar-setup.js"></script>
+</TMPL_IF>
