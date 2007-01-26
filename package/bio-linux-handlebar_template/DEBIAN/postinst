@@ -7,10 +7,10 @@
 ln -s request_barcodes.cgi /usr/lib/cgi-bin/handlebar/bc.cgi || true
 
 #And some more
-ln -s menu.template.html \
-    /usr/share/handlebar/genquery/query.template.html || true
-ln -s menu.template.html \
-    /usr/share/handlebar/genquery/results.template.html || true
+# ln -s menu.template.html \
+#     /usr/share/handlebar/genquery/query.template.html || true
+# ln -s menu.template.html \
+#     /usr/share/handlebar/genquery/results.template.html || true
 
 #Should I attempt to setup a DB?  Not on update:
 if [ "$1" != "configure" -o "$2" != "" ] ; then 
