@@ -53,8 +53,7 @@ collectfiles ()
     install -v -g root -o root -m644 handlebar.sql $SHAREDDIR
     echo "Putting in GenQuery templates"
     install -vd -g root -o root $SHAREDDIR/genquery
-    install -v -g root -o root -m644 ../genquery/date_picker.tmpl ../genquery/login.template.html \
-	    ../genquery/error.template.html ../genquery/menu.template.html $SHAREDDIR/genquery
+    install -v -g root -o root -m644 ../genquery/*.tmpl ../genquery/*.html $SHAREDDIR/genquery
 
     echo "Putting in LICENSE, README, INSTALL"
     install -v -g root -o root -m644 LICENSE* README* INSTALL* $DOCDIR
@@ -82,8 +81,6 @@ SHAREDDIR=$BUILDDIR/share/
 DOCDIR=$BUILDDIR/doc/
 collectfiles
 ln -s request_barcodes.cgi $CGIDIR/bc.cgi 
-ln -s menu.template.html $SHAREDDIR/genquery/query.template.html
-ln -s menu.template.html $SHAREDDIR/genquery/results.template.html
 
 echo "Removing old .deb and tarball"
 rm bio-linux-handlebar*.deb
