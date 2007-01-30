@@ -3,7 +3,7 @@ use strict; use warnings;
 package TableIO::base;
 $VERSION = '$Revision$';
 
-# CVS $Revision: 1.8 $ committed on $Date: 2006/04/24 17:34:40 $ by $Author: tbooth $
+# CVS $Revision$ committed on $Date: 2006/04/24 17:34:40 $ by $Author: tbooth $
 use Carp;
 
 # CGI::Carp is stealing my errors :-(
