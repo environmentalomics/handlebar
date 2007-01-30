@@ -1,7 +1,7 @@
 #!perl
 use strict; use warnings;
 package TableIO::base;
-$VERSION = '$Revision$';
+(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
 
 # CVS $Revision$ committed on $Date: 2006/04/24 17:34:40 $ by $Author: tbooth $
 use Carp;
