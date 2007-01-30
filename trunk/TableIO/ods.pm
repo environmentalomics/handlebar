@@ -1,8 +1,7 @@
 #!perl
-
 use strict; use warnings;
 
-package TableIO::xls;
+package TableIO::ods;
 use base "TableIO::base";
 (our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
 
@@ -10,151 +9,142 @@ use base "TableIO::base";
 sub reader {goto &TableIO::base::reader};
 sub writer {goto &TableIO::base::writer};
 
-#Move to use Unicode throughout the application,
-#but unfortunately the stuff I extract from the Excel files is not utf-8.
-# use Encode;
+#This class implements the reader and writer for OpenDocument spreadsheets
+#it should also be able to read old style .sxc files, but there is not much
+#point in writing them
 
-use constant mime_type => "application/xls";
-use constant file_extension => "xls";
+use constant mime_type => "application/vnd.oasis.opendocument.spreadsheet";
+use constant file_extension => "ods";
 
-#This module will import Excel files.
-
+# As per the Excel module, this one will
 # It will also add the extra info as per CSV as follows:
 # Header line at the top which will be prefixed with a > in the FASTA-stylee
 # Data type info in the line below the headers (suggested by Milo)
 
 # It will add formatting, colouring and fix the date format to the reccommended
-# yyyy-mm-dd.  It will import from OpenOffice Excel files, despite the hurdles
-# involved.
+# yyyy-mm-dd.
 
 # When importing, ignore any line beginning with #hash ,comma or >gt - that
 # probably covers most eventualities.
-# Should still permit rearrangement of columns, though.
+# Should still permit rearrangement of columns.
 
-use Spreadsheet::WriteExcel;
-use Spreadsheet::ParseExcel;
+use OpenOffice::OODoc;
+use IO::Handle;
+use IO::File;
 
 use Data::Dumper;
-use IO::String;
 
-#Reader bits...
-
-#OK, first off we have the dates problem.  Dates in Excel are like some kind of
-#feakish nightmare.  I don't even want to go into them.  Generally the ParseExcel
-#module is able to sort out the dates correctly, but for any Excel file saved
-#in OpenOffice it was returning integers.  So, how does it tell the difference
-#between an integer and a date?  It guesses!  But it guesses a bit wrong. Here
-#is the fix.
-{ 
-    package TableIO::xls::myformatter;
-    require Spreadsheet::ParseExcel::FmtDefault;
-    
-    our @ISA = qw(Spreadsheet::ParseExcel::FmtDefault);
-
-    sub new {
-	bless {} => shift;
+sub _fix_fh
+{
+    #OODoc depends on Archive::Zip which needs proper modern filehandles
+    #to read from, but CGI serves up some broken old school ones.
+    #Putting the workaround in this module, on the basis that it doesn't seem to
+    #fit anywhere else, though it is really a CGI problem.
+    my ($fh) = @_;
+    if(ref $fh eq 'Fh')
+    {
+	return ((new IO::File)->fdopen(fileno($fh), 'r'));
     }
+    $fh;
 
-    sub ChkType($$$) {
-	my $this = shift;
-	my ($iNumeric, $iFmtIdx) = @_;
-
-	my $typename = $this->SUPER::ChkType(@_);
-
-	#I know that these classes should be dates.
-	if ($typename eq "Numeric") {
-	    if( ($iFmtIdx >= 0xA5) && ($iFmtIdx <= 0xAA) )
-	    {
-		$typename = "Date";
-	    }
-	}
-	return $typename;
-    }
-
-    sub FmtStringDef($$$;$) {
-	my $this = shift;
-	my ($iFmtIdx, $oBook, $rhFmt) = @_;
-
-	my $sFmtStr = $this->SUPER::FmtStringDef(@_);
-
-	#Force dates to something useful for me
-	if($sFmtStr =~ /^[dDmMyY]/)
-	{
-	    $sFmtStr = 'd-mmm-yyyy';
-	}
-	
-	return $sFmtStr;
-    }
 }
 
+#Reader bits...
+#Do all the hard stuff at the start.
 sub start_read
 {
     reader(my $this = shift);
 
     # Grab the filehandle and read in the file..
-    my $fh = $this->{fh};
-    #binmode $fh, ":utf8";
-    my $xls = new Spreadsheet::ParseExcel;
-    my $obook = $xls->Parse($fh, new TableIO::xls::myformatter);
+    my $fh = _fix_fh($this->{fh});
+    #die Dumper($fh);
+    #binmode $fh, ":utf8";'
+    my $oofile = ooFile('/dev/null', source_filehandle => $fh) or die "Failed to read file.\n";
+    my $document = ooDocument(file => $oofile);
+
+# DEBUG
+#     die $document->getTableList();
 
     # We always want the first sheet.
-    my $sheet = $obook->{Worksheet}[0];
     my @fhrows;
+    my ($sheet) = $document->getTableList();
+    # Get all the data, but the table has not been normalized so duplicate
+    # columns will only show up as one item.  Therefore scan this data until I find the
+    # colnames row (where all columns should be unique) and use that to determine how
+    # large a table area to normalize.
+    my @tabletext = $document->getTableText($sheet);
+# DEBUG
+#    die @{$tabletext[1]};
 
-    # read each cell on the worksheet by iterating over them
-    ROW: for(my $iR = $sheet->{MinRow} ; defined $sheet->{MaxRow} && $iR <= $sheet->{MaxRow} ; $iR++)
+    # scan for colnames
+    ROW: for my $arow (@tabletext)
     {
-	my $firstcell = $sheet->{Cells}[$iR][0];
+	my $firstcell = $arow->[0];
+    
+	# skip, eg. the line that has the cell format types in it and any other gunk
+	if (!$firstcell or $firstcell =~ /^["]?[>#,]/)
+	{
+	    next ROW;
+	}
+
+	#This should be the colnames row - grab it and stop
+	#??do I need to copy the array or is this reference safe??
+	$this->{names} = $arow;
+	last; 
+    }
+
+    #normalize and re-extract
+    $document->normalizeSheet($sheet,scalar(@tabletext),scalar(@{$this->{names}}));
+    @tabletext = $document->getTableText($sheet);
+
+    #Scan again - this time tidying up
+    @fhrows = grep
+    {
+	my $arow = $_;
+	my $firstcell = $arow->[0];
     
 	# if the header has not been defined and the first cell matches it,
-	# set the headers and skip to the next row
-	if (!defined $this->{header} and $firstcell->{Val} =~ /^["]?[>#,]/) 
+	# grab the header line
+	if (!defined $this->{header} and $firstcell =~ /^["]?[>#,]/) 
 	{ 
-	    $this->{header} = $firstcell->{Val}; 
-	    next ROW;
+	    $this->{header} = $firstcell; 
+	    return 0;
 	}
-	    
-	# trim off the line that has the cell format types in it and any other gunk
-	if (!$firstcell->{Val} or $firstcell->{Val} =~ /^["]?[>#,]/)
-	{
-	    next ROW;
-	}
+ 
+	# skip, eg. the line that has the cell format types in it and any other gunk
+	return 0 if (!$firstcell or $firstcell =~ /^["]?[>#,]/);
 
-	push @fhrows, [];
-	    
-	for(my $iC = 0 ; defined $sheet->{MaxCol} && $iC <= $sheet->{MaxCol} ; $iC++) 
+	# With Excel, and CSV import, I know that all rows will be the same length and I catch
+	# out-of-bounds data later by looking for blanks appearing on the end of the header
+	# row.  Therefore achieve the equivalent effect here by pushing a blank onto the header 
+	# if I find a longer row.
+	push @{$this->{names}}, '' if (@{$this->{names}} < @$arow);
+
+	# Now, the last item in the list will be empty, so trim it (can I really assume this?)
+	pop @$arow;
+
+	#Fix any empty cells to be undefined
+	for(@$arow) 
 	{
-	    my $cell = $sheet->{Cells}[$iR][$iC];
-	    
-	    # the previous code had an array of arrays containing each of the lines of
-	    # the original excel sheet. This line should re-create that, allowing the
-	    # rest of the code to work as before.
-  	    $fhrows[-1][$iC] = $cell->Value() if $cell;
-	    
-	    #Note that an empty cells wants to become undef.
-	    $fhrows[-1][$iC] = undef unless $fhrows[-1][$iC] =~ /\S/;
+	    $_ = undef unless /\S/;
 	}
-    }
+	1;
+    } @tabletext;
 
     # chuck the sheet if it has no data
     unless (@fhrows)
     {
-    # some sort of appropriate error
-	die "No data found in imported xls file:\n$@";
+	# some sort of appropriate error
+	die "No data found in imported ", file_extension, " file:\n$@";
     }
 
-    # Dispose the sheet - we don't need to keep it.
-    undef $sheet;
-    
-    # if the above has worked, the 0th row 
-    # should now be the headings. It is 
-    # purged to save mucking about when
-    # getting all bar codes, later
-    $this->{names} = shift @fhrows;
+    # The first row of the array will have the colnames, but we have already grabbed them,
+    # and maybe added some spaces to the end, so throw away the first line and trim the names
+    shift @fhrows;
+    pop @{$this->{names}};
 
     # save link to array of values
     $this->{allrows} = \@fhrows;
-
 }
 
 #get_header and get_columns just use the default implementations
@@ -362,6 +352,7 @@ sub print_out
 sub start_write
 {
     writer(my $this = shift);
+    die "Writing not yet implemented! D'oh!";
 
     # create the excel object and then a worksheet
     # the worksheet is the bit to be passed around,

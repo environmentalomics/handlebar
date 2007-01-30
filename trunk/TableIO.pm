@@ -1,10 +1,11 @@
 #!perl
 use strict; use warnings;
 
-# CVS $Revision: 1.5 $ committed on $Date: 2006/09/15 13:40:00 $ by $Author: tbooth $
+# CVS $Revision$ committed on $Date: 2006/09/15 13:40:00 $ by $Author: tbooth $
 
 package TableIO;
 our $TableIO = "TableIO";
+(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
 
 =head1 NAME
 
@@ -24,13 +25,13 @@ Tim Booth (tbooth@ceh.ac.uk)
 
 =head1 SUMMARY
 
-Unlike most of the barcode code, this bit is written properly.  The reasons for taking care are:
+Unlike most of the barcode code, this bit is written properly(ish).  The reasons for taking care are:
 
 1) So that Milo can implement the alternative exporters.
 
 2) So that other developers can do their own exporters when this goes OSS.
 
-3) It was about time I wrote some neat(ish) code.
+3) It was about time I wrote some neater code.
 
 See the TableIO::base module for info on how to use the TableIO, and more importantly how
 to go about writing a new wrapper.  This class will provide the static factory methods to 
@@ -61,7 +62,8 @@ but overkill.
 
 my @FORMATS = (
     ["Comma Separated Values", "csv", "Comma-separated values flat text file", 1 ],
-    ["OpenOffice Calc",  "sxc", "Native format for the OpenOffice spreadsheet", 0 ],
+    ["OpenDocument",  "ods", "Native format for OpenOffice 2.0 spreadsheets", 1 ],
+    ["OpenOffice-1 Calc",  "sxc", "Legacy format for OpenOffice spreadsheets (read only)", 0 ],
     ["Excel", "xls", "Microsoft Excel format", 1 ],
 );
 
@@ -160,7 +162,7 @@ sub get_reader
 	eval "
 	    require ${TableIO}::$fmt->{extn};
 	    \$readerobj = ${TableIO}::$fmt->{extn}->new(\$fh);
-	" || die "Cannot find load module $fmt->{extn}.pm to load file of type $fmt->{name}.\n";
+	" || die "Failed to use module $fmt->{extn}.pm to load file of type $fmt->{name}.\n$@\n";
     }
     else
     {
