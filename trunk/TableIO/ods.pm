@@ -90,29 +90,33 @@ sub start_read
 	#This should be the colnames row - grab it and stop
 	#??do I need to copy the array or is this reference safe??
 	$this->{names} = $arow;
-	last; 
+	last ROW; 
     }
 
     #normalize and re-extract
-    $document->normalizeSheet($sheet,scalar(@tabletext),scalar(@{$this->{names}}));
+    $document->normalizeSheet($sheet,scalar(@tabletext),scalar(@{$this->{names}})-1);
     @tabletext = $document->getTableText($sheet);
 
-    #Scan again - this time tidying up
+    #Scan again - this time tidying up (apologies for grep abuse and "{;{")
     @fhrows = grep
-    {
+    {;{
 	my $arow = $_;
 	my $firstcell = $arow->[0];
     
 	# if the header has not been defined and the first cell matches it,
 	# grab the header line
-	if (!defined $this->{header} and $firstcell =~ /^["]?[>#,]/) 
+	if (!defined $this->{header} and $firstcell =~ /^[>#]/) 
 	{ 
 	    $this->{header} = $firstcell; 
-	    return 0;
+	    0, next;
 	}
- 
-	# skip, eg. the line that has the cell format types in it and any other gunk
-	return 0 if (!$firstcell or $firstcell =~ /^["]?[>#,]/);
+
+	# trim off rows with a blank first cell so long as there are no codes yet seen
+	# (though we may have seen the header line)
+	0, next if (!$firstcell && @fhrows <= 1);
+
+	# trim off any other commented lines
+	0, next if ($firstcell =~ /^[>#]/);
 
 	# With Excel, and CSV import, I know that all rows will be the same length and I catch
 	# out-of-bounds data later by looking for blanks appearing on the end of the header
@@ -121,7 +125,8 @@ sub start_read
 	push @{$this->{names}}, '' if (@{$this->{names}} < @$arow);
 
 	# Now, the last item in the list will be empty, so trim it (can I really assume this?)
-	pop @$arow;
+#	die Dumper($arow) if  (@$arow)
+	pop @$arow; 
 
 	#Fix any empty cells to be undefined
 	for(@$arow) 
@@ -129,7 +134,7 @@ sub start_read
 	    $_ = undef unless /\S/;
 	}
 	1;
-    } @tabletext;
+    }} @tabletext;
 
     # chuck the sheet if it has no data
     unless (@fhrows)
@@ -137,6 +142,9 @@ sub start_read
 	# some sort of appropriate error
 	die "No data found in imported ", file_extension, " file:\n$@";
     }
+
+    #Dont' need that file handle any more
+    delete $this->{fh};
 
     # The first row of the array will have the colnames, but we have already grabbed them,
     # and maybe added some spaces to the end, so throw away the first line and trim the names
@@ -352,7 +360,7 @@ sub print_out
 sub start_write
 {
     writer(my $this = shift);
-    die "Writing not yet implemented! D'oh!";
+    die "Writing of OpenDocument not yet implemented! D'oh!\n";
 
     # create the excel object and then a worksheet
     # the worksheet is the bit to be passed around,

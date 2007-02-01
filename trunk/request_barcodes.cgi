@@ -314,7 +314,7 @@ MAIN: for(1){
 	      bch1("Data import in progress"),
 	      $q->p("Reading file <i>$impfile</i>"),
 	      $q->p("<b>$count codes</b> found of type <b>" . bczapunderscores($type). "</b> with owner <b>$owner</b>."),
-	      $q->p("Please wait while processing...");
+	      $q->p("Processing...");
 	      
 	#Strip out disposed numbers
 	my %disposedhash;

@@ -157,7 +157,7 @@ sub get_reader
 
 	#I could do this with a cunning call to `file` but for
 	#now just go by extension.
-	$fmt or die "Unable to determine a suitable reader for $fname.";
+	$fmt or die "Unable to determine a suitable reader for $fname.\n";
 	
 	eval "
 	    require ${TableIO}::$fmt->{extn};

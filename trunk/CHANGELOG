@@ -469,8 +469,9 @@ files in the package.  Harder than it looks!
 Note to self: to checkout HB do:
 svn checkout --username timbooth https://svn.sourceforge.net/svnroot/handlebar/trunk
 To upload files to SF do:
-ftp anonymous@ftp.sourceforge.net
+pftp upload.sourceforge.net
 >bin
+>cd incoming
 >put file
 
 On 20/10/06:
@@ -487,3 +488,73 @@ on 10/11/06:
 Updated queries and item types in default database to make for a better initial setup.  Stewart made
 new DVD with this package on, so I'm calling it version 2.0.1 and checkpointing it in SVN, ready for 
 resubmission of paper.
+
+On 18/1/07:
+Right, after some time in the XML wilderness it is time to add the fabled collection facility.  The idea is that collections of barcodes can be defined and referenced by the user.
+
+A collection should have:
+1) An ID disctinct from the barcode IDs - eg, coll:00:1 (or summat)
+2) An owner
+3) A description in text
+4) Other metadata?
+
+User should be able to:
+1) Make a collection from a range
+2) Make a collection from a report if the report returns a list of barcodes
+3) Make a collection manually from a list or range
+4) Add manually or from report or from block
+5) Delete manually or by range
+6) Report their collections
+6a) Make a permalink to a collection (eg from EnvBase)
+7) Export collections if homogeneous
+8) Re-order elements in a set (hard?)
+
+Users should be able to collect others codes.
+A collection should be a poset (no dupes, but sorted)
+
+so, todo:
+Add a barcode_collection table:
+
+collection_id
+user
+description
+creation_time
+modification_time
+
+And add a barcode collection item table:
+collection_id
+code
+rank - think about this
+(unique id+code)
+
+Rank - hmmm, I could strictly rank everything on addition, then the algorithms become:
+
+Add a code or codes - add with max(rank) + 1
+Shift to end - set rank = max(rank) + 1
+Shift to start - increment all ranks, set rank = 0
+Shift up 1 - shift down one on next element
+Shift down one - increment all following, then set rank of prev to rank + 1
+
+On 31/1/07:
+...more on that later, back on core HB:
+
+When an error occurs in the upload the header gets printed twice, which is fine, but due to the absolute position of the banner this causes the two navbanners to overlay each other at the top of the page.  No good!  Using relative positioning causes either the navbanner to either take up the whole page width, running over the logo, or else for the header text to wrap around it.  Bah.
+Solution was to use a full-width relatively positioned outer div and then to put the banner in a span within this.  See the CSS.  The old CSS still works as before but the new CSS picks up the extra div and makes each menu sit on each header.  There is still one logo at the top.
+
+Then discovered that I have made a couple fo thinkos that could lead to data loss :-(
+
+A) If a line has nothing in the barcode column but has data it should cause an error, in case the user expected the data to be saved.  Instead it is just skipped, in order to accommodate the type line which has a blank first column.  The first column should contain a '#'.  Solution:
+
+1) Modify all the TableIO stuff to not skip those blanks, only # and >
+2) Modify all of them to put a # in the first column of the type line
+3) TEST, TEST, TEST
+4) Notify users that if they see the error they just need to add the '#'.
+
+" You may get an error when uploading spreadsheet data downloaded prior to the upgrade, complaining about "a line with no value in the barcode column".  You need to edit the spreadsheet and put a single hash (#) into cell A3, then retry uploading.
+The reason for this change is an attempt to detect any extra data in a spreadsheet which the user might expect to be saved, but was previously silently ignored.  The hash symbol tells the database that the line really should be ignored. "
+
+...Hmmm, no, that just looks messy in the file and fussy for the user.  Instead skip blanks until I hit the first barcode.  Mess now in the code :-(
+
+B) If I upload a file with a blank entry against a barcode, but the barcode is already in the database, it is being removed.  This is wrong - there is code to trap this, but it is clearly borked...
+
+Problem was with my hash-based logging of hits and disposals.  bcdequote() kept the leading zeros and this did not match up with the integer form, so the system did not spot the match.  This was also affecting disposals, allowing them to be modified by the looks of it - ouch!  One-line fix backported to Envgen.

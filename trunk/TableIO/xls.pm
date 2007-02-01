@@ -108,17 +108,18 @@ sub start_read
     
 	# if the header has not been defined and the first cell matches it,
 	# set the headers and skip to the next row
-	if (!defined $this->{header} and $firstcell->{Val} =~ /^["]?[>#,]/) 
+	if (!defined $this->{header} and $firstcell->{Val} =~ /^[>#]/) 
 	{ 
 	    $this->{header} = $firstcell->{Val}; 
 	    next ROW;
 	}
-	    
-	# trim off the line that has the cell format types in it and any other gunk
-	if (!$firstcell->{Val} or $firstcell->{Val} =~ /^["]?[>#,]/)
-	{
-	    next ROW;
-	}
+	
+	# trim off rows with a blank first cell so long as there are no codes yet seen
+	# (though we may have seen the header line)
+	(!$firstcell->{Val} && @fhrows <= 1) and next ROW;
+
+	# trim off any other gunk
+	($firstcell->{Val} =~ /^[>#]/) and next ROW;
 
 	push @fhrows, [];
 	    
@@ -403,7 +404,7 @@ sub print_header_stuff
     }
 
     #And notes on the attibutes
-    #Notes for 'barcode' need to be blank, or else begin with a '>'
+    #Notes for 'barcode' need to be blank, or else begin with a '>' or '#'
     #my @attrs = ('');
 
     #Run through columns and get params.
