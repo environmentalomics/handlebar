@@ -16,14 +16,12 @@ table.neat1 th {
 	padding: 3px 3px 3px 3px;
 	border-style: ridge ridge ridge ridge;
 	border-color: gray gray gray gray;
-	background-color: rgb(255, 245, 238);
 }
 table.neat1 td {
 	border-width: 2px 2px 2px 2px;
 	padding: 3px 3px 3px 3px;
 	border-style: ridge ridge ridge ridge;
 	border-color: gray gray gray gray;
-	background-color: rgb(255, 245, 238);
 	font-size : smaller;
 }
 

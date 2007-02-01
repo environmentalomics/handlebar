@@ -376,15 +376,18 @@ my $ios = new IO::String;
 	$divs_open++;
 	print $ios $q->start_div({-id=>"topbanner"});
     }
-    print $ios $q->div( {-id=>'navbanner', -class=>'navbanner'},
+    print $ios	
+      $q->div( {-class=>'navbanner_outer'},
+		  $q->span( {-id=>'navbanner', -class=>'navbanner'},
 	  "Main menu:", join("  ", map { $q->span(
 					    $_->{current} ?
 					      { -class=>"navbanner_current" } : (),
 					    $q->a({-href=>$_->{href}, -target=>$_->{target}}, 
 						   $nbsp->($_->{label})))
 					 } @sections
-			     )
-    );
+			    )
+			  )
+      );
 $ios->str;
 }
 
@@ -1092,6 +1095,9 @@ sub bcdequote
     #This is easy - remove all but digits
     my $code = shift || return undef;
     $code =~ s/\D//g;
+    #But I also need to remove leading zeros, or my hash-based detection of
+    #matches between input and database screws up!
+    $code =~ s/^0+//;
     $code;
 }
 

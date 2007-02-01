@@ -66,14 +66,22 @@ sub start_read
     my $fh = $this->{fh};
     my @fhrows = <$fh>;
 
-    #See if the first row is the header
-    if($fhrows[0] =~ /^[>#]/)
+    #Remove junk at the top
+    for(@fhrows)
     {
-	$this->{header} = $fhrows[0];
+	my $datafound = 0;
+	#See if this row is the header
+	if( /^["]?[>#]/ )
+	{
+	    $this->{header} = $_ unless $this->{header};
+	}
+	elsif(/^,/)	   { s/^/#/; }
+	elsif(!$datafound) { $datafound++; }
+	else		   { last; }
     }
     
-    #Remove anything which begins with junk
-    @fhrows = grep {$_ && !/^["]?[>#,]/} @fhrows;
+    #Remove anything which begins with comment markers
+    @fhrows = grep {$_ && !/^["]?[>#]/} @fhrows;
 
     #Load the thing into DBD::AnyData
     my $addbh = DBI->connect('dbi:AnyData(RaiseError=>1):');
@@ -204,7 +212,7 @@ sub print_header_stuff
 	print $ios combine(@{$this->{names}});
 
 	#And notes on the attibutes
-	#Notes for 'barcode' need to be blank, or else begin with a '>'
+	#Notes for 'barcode' need to be blank or '>' to skip the line
 	my @attrs = ('');
 
 	#Run through columns and get params.

@@ -75,30 +75,24 @@ A:hover, A:active  { color: #000066;  }
 	background-color: #9bdb68;
 	/*border-top: 70px solid #9bdb68;*/
 	border-top: 0;
-	padding-top: 70px;
+	padding-top: 76px;
 	margin: 0px 0 0 0 ;
 	border-bottom:3px dotted #FFF;
 	/*height: 120px; */
 	background-image: url(http://envgen.nox.ac.uk/images/headbg1.jpg);
+	text-align:center;
 }
 
 #topbanner h1 {
-	font-family: serif;
-	font-size:20px;
-	/* font-weight:bold; */
+	font:28px verdana, arial, helvetica, sans-serif;
+	font-weight:bold;
 	text-align:center;
+	color:#003399;
 	/*text-transform: uppercase;
 	 letter-spacing: .1em;
 	 */
 	padding:10px;
-}
-
-#topbanner h1 {
-	font:11px verdana, arial, helvetica, sans-serif;
-	 
-	font-size:28px;
-	font-weight:bold;
-	color:#003399;
+	margin:auto;
 }
 
 #logodiv_top {
@@ -107,7 +101,7 @@ A:hover, A:active  { color: #000066;  }
 	display: block;
 	position: absolute;
 	float: right;
-	top: 4px;
+	top: 2px;
 	right: 6px;
 	background: no-repeat left top;
 	background-image: url(handlebar_weblogo.png); 
@@ -115,9 +109,22 @@ A:hover, A:active  { color: #000066;  }
 	z-index: 1;
 }
 
-/* The navigation banner is like the one on our pages */
-.navbanner {
+/* The navigation banner is the main menu
+ * I seem to have finally fixed the positioning and sizing issues
+ * by using an outer div and an inner span
+ */
+.navbanner_outer {
 	display: block;
+	position: relative;
+	top: -66px;
+	float: left;
+	width: 100%;
+	text-align:left;
+	z-index:10;
+}
+	
+
+.navbanner {
 	background-color: #EFF4DE;
 	color: #000000;
 	font: 13pt "Tahoma", sans-serif;
@@ -127,9 +134,6 @@ A:hover, A:active  { color: #000066;  }
         border-color: #DDDDDD #666666 #666666 #DDDDDD;
 	padding: 6px 6px 6px 6px;
 	/*width: 50em;*/
-	z-index:10;
-	position: absolute;
-	top: 2px;
 }
 
 .navbanner a, .navbanner a:visited {
