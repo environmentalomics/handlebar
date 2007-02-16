@@ -405,7 +405,8 @@ CREATE TABLE subclone_plate (
     host_strain character varying(64) NOT NULL,
     vector character varying(64) NOT NULL,
     resistance character varying(64) NOT NULL,
-    storage_method character varying(64) NOT NULL
+    storage_method character varying(64) NOT NULL,
+    CONSTRAINT foocheck CHECK ((length((vector)::text) < 10))
 )
 INHERITS (generic);
 

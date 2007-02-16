@@ -572,3 +572,4 @@ Random thougt - give a nickname to collections as well as the id and long desc. 
 On 16/2/06:
 
 Today I'm going to try and roll release 2.1, given the bug fixes made.
+Fuxed the CSS to look OK with IE.

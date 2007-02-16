@@ -117,10 +117,12 @@ A:hover, A:active  { color: #000066;  }
 	display: block;
 	position: relative;
 	top: -66px;
-	float: left;
 	width: 100%;
 	text-align:left;
 	z-index:10;
+	/*for your IEs only... */
+	_padding:10px 0px 10px 0px;
+	_top: -72px;
 }
 	
 
@@ -150,6 +152,7 @@ A:hover, A:active  { color: #000066;  }
 .navbanner a:hover   { 
     color: #000066; 
     padding : 2px 2px 2px 2px;
+    _padding : 2px 2px 0px 2px;
     border: 2px outset;
 }
 
