@@ -553,8 +553,22 @@ A) If a line has nothing in the barcode column but has data it should cause an e
 " You may get an error when uploading spreadsheet data downloaded prior to the upgrade, complaining about "a line with no value in the barcode column".  You need to edit the spreadsheet and put a single hash (#) into cell A3, then retry uploading.
 The reason for this change is an attempt to detect any extra data in a spreadsheet which the user might expect to be saved, but was previously silently ignored.  The hash symbol tells the database that the line really should be ignored. "
 
-...Hmmm, no, that just looks messy in the file and fussy for the user.  Instead skip blanks until I hit the first barcode.  Mess now in the code :-(
+...Hmmm, no, that just looks messy in the file and fussy for the user.  Instead skip blanks until I hit the first barcode.  Mess now in the code :-( , but it's done.
 
 B) If I upload a file with a blank entry against a barcode, but the barcode is already in the database, it is being removed.  This is wrong - there is code to trap this, but it is clearly borked...
 
 Problem was with my hash-based logging of hits and disposals.  bcdequote() kept the leading zeros and this did not match up with the integer form, so the system did not spot the match.  This was also affecting disposals, allowing them to be modified by the looks of it - ouch!  One-line fix backported to Envgen.
+
+On 13/02/07:
+
+Renzo is visiting today so any technical points arising from the discussion will be noted here:
+
+...
+
+Priority in the immediate few days is the collections interface, now that the above bugs are fixed.  Maybe also roll a 2.1 release for SF.net, for the look of the thing.  Need to test new CSS on IE first.
+
+Random thougt - give a nickname to collections as well as the id and long desc.  Limit it to lower case and underscores or something
+
+On 16/2/06:
+
+Today I'm going to try and roll release 2.1, given the bug fixes made.
