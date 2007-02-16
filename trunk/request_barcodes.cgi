@@ -836,14 +836,14 @@ $ios->str;
 
 sub importrecords
 {
-    my $tio = shift(); #Active TableIO object to read records from table
-    my $bcfound = shift(); #Column containing barcode
-    my $type = shift();
-    my $deletedhash = shift(); #All the codes found in the file that were already in the DB
-    my $disposedhash = shift();
+    my ( $tio,		#Active TableIO object to read records from table
+         $bcfound,	#Column containing barcode
+         $type,
+         $deletedhash,	#All the codes found in the file that were already in the DB
+         $disposedhash ) = @_;
+
     my $table = bctypetotable($type);
     my $headings = $tio->get_column_names;
-
 
     my $empties = 0;
     #We need to deal with column name mismatches and fail or warn gracefully.
@@ -938,6 +938,31 @@ sub importrecords
 	    # my $errnum = $inserth->err;
 	    my $err = $inserth->errstr();
 	    chomp($err);
+
+	    #If this was a check constraint let the user know what it said, even though
+	    #it is liable to be cryptic if you don't grok SQL
+	    if($err =~ /violates check constraint "(\w+)"/)
+	    {eval{
+		#This diagnosis should be done after the database handle cleanup,
+		#so I have to rollback early, which is a hack, but the alternative is to
+		#re-factor the code (which I should) or to pull apart the message later, which
+		#is also a hack.
+		$inserth->finish();
+ 		bcrollback();
+		my $csth = bcprepare("
+		    SELECT consrc FROM pg_constraint con 
+		    INNER JOIN pg_class c ON c.oid = con.conrelid 
+		    WHERE contype = 'c' AND c.relname = ?
+		    AND conname = ? LIMIT 1");
+		$csth->execute($type, $1);
+		my ($cdef) = $csth->fetchrow_array();
+
+		if($cdef)
+		{
+		    $err .= "\n\nThe definition of the \"$1\" constraint is:
+			     $cdef";
+		}
+	    };}
 
 	    my $report = "The message from the server was:
 			  $err\n 
