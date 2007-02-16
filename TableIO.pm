@@ -62,7 +62,7 @@ but overkill.
 
 my @FORMATS = (
     ["Comma Separated Values", "csv", "Comma-separated values flat text file", 1 ],
-    ["OpenDocument",  "ods", "Native format for OpenOffice 2.0 spreadsheets", 1 ],
+    ["OpenDocument",  "ods", "Native format for OpenOffice 2.0 spreadsheets", 0 ],
     ["OpenOffice-1 Calc",  "sxc", "Legacy format for OpenOffice spreadsheets (read only)", 0 ],
     ["Excel", "xls", "Microsoft Excel format", 1 ],
 );
