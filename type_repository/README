@@ -1,0 +1,10 @@
+Within this directory are exported the type templates that can be loaded into the Handlebar.  
+
+For each template there is an .sql file which can be loaded with psql -f (or equivalent) and a matching .desc
+file which contains an HTML description of the type (as created by bcdescribetype).  I've also included some Perl scripts:
+
+showtypes.perl will gather up all the types and compile them into an HTML page
+dumptypes.perl will connect to the database specified in barcodes.conf and dump all the types to the
+current directory
+
+Also there will be some CGI stuff to pull the repo off SF and to allow someone to submit a type they have exported.
