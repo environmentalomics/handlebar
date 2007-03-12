@@ -1,10 +1,22 @@
-Within this directory are exported the type templates that can be loaded into the Handlebar.  
+Within this directory are scripts to handle the type templates that can be loaded into the Handlebar.  
+The actual types are held in the templates directory at the top level of the SVN tree.
 
 For each template there is an .sql file which can be loaded with psql -f (or equivalent) and a matching .desc
-file which contains an HTML description of the type (as created by bcdescribetype).  I've also included some Perl scripts:
+file which contains an HTML description of the type (as created by bcdescribetype).  
 
-showtypes.perl will gather up all the types and compile them into an HTML page
+The Perl scripts (soem CGI, some standalone):
+
+showtypes.cgi will gather up all the types and compile them into an HTML page
 dumptypes.perl will connect to the database specified in barcodes.conf and dump all the types to the
 current directory
 
 Also there will be some CGI stuff to pull the repo off SF and to allow someone to submit a type they have exported.
+
+Further notes on showtypes.cgi -
+
+This should really be run off the sf.net web server, since it is closely associated with the SVN repository.  Sadly they don't allow this, so
+I'll stick with Envgen.
+
+get list of all the sql files
+compile them with a download link and a browse history link
+add a form to submit types by asking for the .sql file and mailing it to me
