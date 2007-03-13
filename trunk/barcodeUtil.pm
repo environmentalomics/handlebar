@@ -24,7 +24,7 @@ use strict; use warnings;
 # trying to send warnings to the right place and give the user as much info as possible at all times - this
 # leads to spaghetti.
 #  I'm not using HTML templates.  These would make the code vastly more elegant but unfortunately no more
-# comprehensible - see GenQuery for some hardcore template action.
+# comprehensible (or maybe it would be??) - see GenQuery for some hardcore template action.
 # 
 # On the plus side the import/export is fully modularised.  Ie. you should be able to write an import/export
 # plugin for your favoured spreadsheet format without touching this code.  The workings of the TableIO are
@@ -493,60 +493,59 @@ my $ios = new IO::String;
 
     my $printrowsub = sub
     {
-	my $row = shift;
-	my $flags = shift;
-	#So $row now references a hash of properties for
-	#the table column in question
-	
-	#First skip the 'barcode' field
-	next if $row->{COLUMN_NAME} eq 'barcode';
+		my $row = shift;
+		my $flags = shift;
+		#So $row now references a hash of properties for
+		#the table column in question
+		
+		#First skip the 'barcode' field
+		return if $row->{COLUMN_NAME} eq 'barcode';
 
-	#Remove unsightly underscores
-	$row->{COLUMN_NAME} = bczapunderscores($row->{COLUMN_NAME});
+		#Remove unsightly underscores
+		$row->{COLUMN_NAME} = bczapunderscores($row->{COLUMN_NAME});
 
-	if($flags->{bc})
-	{
-	    #This is a barcode, then
-	    $row->{TYPE_NAME} = 'barcode';
-	    $row->{COLUMN_SIZE} = '';
-	}
-	else
-	{
-	    #Make the types more legible
-	    ($row->{TYPE_NAME}, $row->{COLUMN_SIZE}) =
-		bcsqltypedemystify($row->{TYPE_NAME}, $row->{COLUMN_SIZE});
-	}
+		if($flags->{bc})
+		{
+			#This is a barcode, then
+			$row->{TYPE_NAME} = 'barcode';
+			$row->{COLUMN_SIZE} = '';
+		}
+		else
+		{
+			#Make the types more legible
+			($row->{TYPE_NAME}, $row->{COLUMN_SIZE}) =
+			bcsqltypedemystify($row->{TYPE_NAME}, $row->{COLUMN_SIZE});
+		}
 
-	#Anyone for Curry today?
-	my $formatter = sub{@_};
-	if( $flags->{noexport} )
-	{
-	    my $of = $formatter;
-# 	    $formatter = sub{ $q->span({-style => 'text-decoration: line-through;'}, 
-# 				       $of->(@_)) };
-	    #noeport is there to be used for timestamps where the database will auto-fill
-	    #the field.  Strikethrough looks wrong for that.
-	    $formatter = sub{ my $x = join('',$of->(@_)); $x eq '' ? '' : "($x)" };
-	}
-	if(! $row->{NULLABLE})
-	{
-	    my $of = $formatter;
-	    $formatter = sub{ $q->b($of->(@_)) };
-	}
-	if( $flags->{bc})
-	{
-	    my $of = $formatter;
- 	    $formatter = sub{ $q->span({-style => 'color: navy;'}, 
- 				       $of->(@_)) };
-	}
+		#Anyone for Curry today?
+		my $formatter = sub{@_};
+		if( $flags->{noexport} )
+		{
+			my $of = $formatter;
+	# 	    $formatter = sub{ $q->span({-style => 'text-decoration: line-through;'}, 
+	# 				       $of->(@_)) };
+			#noeport is there to be used for timestamps where the database will auto-fill
+			#the field.  Strikethrough looks wrong for that.
+			$formatter = sub{ my $x = join('',$of->(@_)); $x eq '' ? '' : "($x)" };
+		}
+		if(! $row->{NULLABLE})
+		{
+			my $of = $formatter;
+			$formatter = sub{ $q->b($of->(@_)) };
+		}
+		if( $flags->{bc})
+		{
+			my $of = $formatter;
+			$formatter = sub{ $q->span({-style => 'color: navy;'}, 
+						   $of->(@_)) };
+		}
 
-	print $ios $q->Tr(
-		   $q->td( [ map $formatter->($_),
-				($row->{COLUMN_NAME},
-				 $row->{TYPE_NAME},
-				 $row->{COLUMN_SIZE},
-				 $q->escapeHTML($row->{REMARKS})) ] ));
-	
+		print $ios $q->Tr(
+			   $q->td( [ map $formatter->($_),
+					($row->{COLUMN_NAME},
+					 $row->{TYPE_NAME},
+					 $row->{COLUMN_SIZE},
+					 $q->escapeHTML($row->{REMARKS})) ] ));	
     };
 
     #Now the final complication is that I am supporting the 'demote'

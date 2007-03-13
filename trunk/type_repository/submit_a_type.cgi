@@ -9,7 +9,7 @@ use barcodeUtil;
 use MIME::Lite;
 
 our %CONFIG = %{bcgetconfig()};
-our $MAILADDR = $CONFIG{MAILADDR};
+our $SUBMIT_MAIL_ADDRESS = $CONFIG{SUBMIT_MAIL_ADDRESS};
 our $SMTP_SERVER = $CONFIG{SMTP_SERVER};
 
 my $q = bcgetqueryobj;
@@ -49,13 +49,13 @@ for($q)
 	else
 	{
 		$result = gen_error("Sorry - there was an internal error and the submission failed.  If you wish,
-							 you can simply send the template by e-mail to $MAILADDR.");
+							 you can simply send the template by e-mail to $SUBMIT_MAIL_ADDRESS.");
 	}
 }
 
 #Print top stuff - TODO simulate the nav banner with links to the main site
-print bcheader(), bcstarthtml($title), 
-	  $q->div({-id=>"topbanner"}, bch1($title)), 
+print bcheader(), bcstarthtml($title),
+	  $q->div({-id=>"topbanner"}, repo_navbanner(), bch1($title)), 
 	  $q->start_div({-id=>"mainsection"}),
 	  $result, "\n";
 
@@ -65,13 +65,13 @@ print $q->h2("Submit a template as a .sql file."),
 	  $q->p("
 You can use this form to send a type description to the Handlebar project maintainers.
 To export a file in the correct format use the export feature on the Extra Admin tab.
-The files you submit will be e-mailed to $MAILADDR."
+The information entered into this form will be e-mailed to <em>$SUBMIT_MAIL_ADDRESS</em>."
 	  ),
 	  $q->table( {-class=>"formtable"},
         $q->Tr($q->td( ["Your name ", $q->textfield(-size=>"36",-name=>"realname")] )), 
         $q->Tr($q->td( ["Your e-mail ", $q->textfield(-size=>"36",-name=>"email")] )), 
 	    $q->Tr($q->td({-colspan=>2}, "
-Any additional comments relating to the type definition?  This is in addition to the existing
+Any comments relating to the type definition?  This is in addition to the existing
 comments recorded within the definition."
 	    )),
         $q->Tr($q->td( ["Comments ", $q->textarea(-columns=>"36",-name=>"comment")] )), 
@@ -95,7 +95,7 @@ sub mail_it_then
 		MIME::Lite->send('smtp', $SMTP_SERVER, Timeout=>60);
 	}
 	my $msg = MIME::Lite->new(
-			To => $MAILADDR,
+			To => $SUBMIT_MAIL_ADDRESS,
             From => "$user@$host",
 			Subject => "A barcode template submission from $realname",
 			Type    => 'multipart/mixed',
@@ -123,3 +123,42 @@ sub gen_error
       $q->div({-class=>"errorbox", -style=>"margin-top:1em"}, "<p><b>Error:</b></p>" . join("<br />\n", @_));
 }
 
+sub repo_navbanner
+{
+	my $res = '';
+
+	#Equivalent of the internal navigation banner for the repository.
+	my @sections = (
+		{ href=>"http://handlebar.sourceforge.net", label=>"Handlebar home page" },
+	    { href=>"showtypes.cgi",   label=>"Browse templates" },
+	    { href=>"submit_a_type.cgi",   label=>"Submit a template" },
+	);
+
+	$sections[2]->{current} = 1;
+
+	my $nbsp = sub{
+	  (my $foo = "@_") =~ s/ /&nbsp;/g;
+	  $foo;
+    };
+
+# 	unless($barcodeUtil::divs_open)
+#     {	
+# 	$barcodeUtil::divs_open++;
+# 	$res .= $q->start_div({-id=>"topbanner"});
+#     }
+
+	$res .= 
+      $q->div( {-class=>'navbanner_outer'},
+		  $q->span( {-id=>'navbanner', -class=>'navbanner'},
+	  "Template repository menu:", join("  ", map { $q->span(
+					    $_->{current} ?
+					      { -class=>"navbanner_current" } : (),
+					    $q->a({-href=>$_->{href}, -target=>$_->{target}}, 
+						   $nbsp->($_->{label})))
+					 } @sections
+			    )
+			  )
+      );
+
+	$res;
+}
