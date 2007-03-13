@@ -173,8 +173,7 @@ sub validateinput
 		
     $rangebase == $info[4] 
 	    or die "Codes ", bcquote($fromcode), " and ", 
-		   bcquote($tocode), " are not part of the same allocation block.\n";
-    
+		   bcquote($tocode), " are not part of the same allocation block.\n"; 
     
     $username = $info[0];
 

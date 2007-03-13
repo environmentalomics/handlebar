@@ -4,24 +4,26 @@
 use strict; 
 use warnings;
 use Data::Dumper;
+use Getopt::Std;
 
 # Iterate over all types in the database, and dump them out into specified dir.
 
-my $usage = "dumptypes.perl [-f] <target dir>\n";
+my $usage = 
+"dumptypes.perl [options] <target dir>
+	options: -f(orce) = overwrite without prompt
+			 -h(idden) = dump all the hidden types\n";
 
-#TODO add flag to include/exclude hidden types.
-#You'll need optarg to do that properly
+#Add flag to include/exclude hidden types.
+#Need optarg to do that properly
+our ($opt_f, $opt_h);
+getopts('fh');
 
 use lib "..";
 use barcodeUtil;
 use barcodeTypeExporter;
 
-my $force;
-if(($ARGV[0] ||'') eq '-f')
-{
-    shift @ARGV;
-    $force = 1;
-}
+my $force = $opt_f;
+$opt_h = $opt_h;
 
 my $target_dir = shift(@ARGV) or die "Usage: $usage";
 if(! -d $target_dir)
@@ -38,6 +40,9 @@ barcodeUtil::connectnow();
 #get types
 #sort list (no need - already sorted)
 my @alltypes = @{bcgetbctypes()};
+
+#Find hidden/non-hidden
+@alltypes = grep {!$opt_h xor bcgetflagsforfield($_)->{hide}} @alltypes;
 
 #for each
 for my $atype (@alltypes)
