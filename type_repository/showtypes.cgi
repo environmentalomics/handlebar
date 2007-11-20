@@ -93,7 +93,7 @@ for(@types)
 
 print $q->h2("Adding or updating types"),
 		$q->p("If you have defined your own type templates, you may use " . 
-			$q->a({-href=>'submit_a_type.sql'}, "this form ") .
+			$q->a({-href=>'submit_a_type.cgi'}, "this form ") .
 			"to submit them to the repository for others to use.");
 
 

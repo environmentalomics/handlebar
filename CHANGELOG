@@ -541,7 +541,7 @@ On 31/1/07:
 When an error occurs in the upload the header gets printed twice, which is fine, but due to the absolute position of the banner this causes the two navbanners to overlay each other at the top of the page.  No good!  Using relative positioning causes either the navbanner to either take up the whole page width, running over the logo, or else for the header text to wrap around it.  Bah.
 Solution was to use a full-width relatively positioned outer div and then to put the banner in a span within this.  See the CSS.  The old CSS still works as before but the new CSS picks up the extra div and makes each menu sit on each header.  There is still one logo at the top.
 
-Then discovered that I have made a couple fo thinkos that could lead to data loss :-(
+Then discovered that I have made a couple of thinkos that could lead to data loss :-(
 
 A) If a line has nothing in the barcode column but has data it should cause an error, in case the user expected the data to be saved.  Instead it is just skipped, in order to accommodate the type line which has a blank first column.  The first column should contain a '#'.  Solution:
 
@@ -567,10 +567,132 @@ Renzo is visiting today so any technical points arising from the discussion will
 
 Priority in the immediate few days is the collections interface, now that the above bugs are fixed.  Maybe also roll a 2.1 release for SF.net, for the look of the thing.  Need to test new CSS on IE first.
 
-Random thougt - give a nickname to collections as well as the id and long desc.  Limit it to lower case and underscores or something
+Random thought - give a nickname to collections as well as the id and long desc.  Limit it to lower case and underscores or something
 
-On 16/2/06:
+On 16/2/07:
 
 Today I'm going to try and roll release 2.0.2, given the bug fixes made.
 Fuxed the CSS to look OK with IE.
 Release made it to SF.net, package pending
+
+On 13/03/07:
+
+Did not get round to making a BL package before, so have now bumped the version to 2.1beta and rolled a package for use by anyone reading the paper (which came out this week!).  Package really needs a bit of soak testing, but it is almost certainly less broken than 2.0.1 in any case.
+
+Note that there is also a fix to GenQuery which was a bit broken on IE (though not in the default Handlebar configuration).
+
+On 27/03/07:
+
+Revisiting the collections, adding the nicknames and going with the ordering algorithm.  Also, the question of should I store
+the collection ID as an integer or as a string.  The arguments are slightly different compared to the barcode numbering as I'm not
+going to be doing lots of calculations on the numbers - they are just opaque unless I'm generating a new ID, so I could store a string.  On the other hand, this is a lot of redundant info to store and it is not good in terms of data modelling.
+
+so, todo:
+Add a barcode_collection table:
+
+collection_prefix (varchar 16) - normally the same for each collection within the db, see below
+collection_id (int, unique) - collection names quoted as "$prefix.$id" where id is zero-padded to four digits
+nickname (varchar 36)
+user
+description (text)
+creation_time
+modification_time
+
+And add a barcode collection item table:
+collection_id (int)
+code (bigint)
+rank - (int)
+(unique id+code)
+
+Prefix will be calculated as $conf{COLLECTION_PREFIX} or else "coll.$d" where $d is the first $PREFIX_LENGTH chars of $MIN_BAR_CODE.  The prefix can be changed in the config but the existing collection names will not be altered (although you could do that manually).
+
+Thinking of how to allow GenQuery to link to the creator interface, maybe it is time for a new GQ table - query_linkout:
+
+query_id
+url
+linkout_name
+key_column
+
+Semantics:
+
+If a query has any associated entries in the linkout table then when the query is run:
+1) The parameters are marshalled as for linkwithterms
+2) The key column is combined into a single param, as with a multi-select
+3) All these are added to the url
+4) This is fed into the parameter LINKOUT_{$linkout_name} and into the template
+
+The template can then pick up this linkout and show a link.  This will enable me to do the 'make these codes into a collection' stunt and probably some other stuff besides.
+
+Will sleep on it...
+OK, looks good, but to make it fancier add a 'pack' flag.  When this is used, the following will be applied:
+
+params will be sorted - no, don't do that!
+params will be URL-escaped, giving me : and , to play with
+any sequential numbers will be grouped with a : separator (see code for making accession lists)
+everything will be joined by commas
+resulting string will be gzipped
+resulting buffer will be base64 encoded
+tr|/+=|_.-| because these chars don't expand in the URL
+
+eg:
+1001002:1001004,1001006,1001009,1001100:1001200,1001210,1001211,1001215,1001300,1001400:1001450
+
+compresses to:
+eNo1ysENACAMAsCFfEBtm+j+g2kQH+RCgACB2JQ5nm2XvNEegHrwS1tyek//s3AAZScSHg==
+
+see ~/perl/zlibtest.perl
+
+On 5/9/07 - Quickly updated the SQL in the release package to work with the newer GenQuery.  Left everything else in the
+package untouched.
+
+On 12/11/07:
+
+Been a while.  We have a new and improved linkout system for HB that avoids the cruft and compression gymnastics above.  At some point 
+I will do the collection stuff but for now I have this concern:  I need to be able to find child links as well as parents.  This is awkward
+because any field tagged as 'bc' could link to my code of interest, so to do it fully automatically I would have to scan all the tables, 
+check all the flags and then read any 'bc' column to see if it contains my code of interest.  This is going to take ages, so keep an index:
+
+bcIndexer.pm
+
+Requires a new table - barcode_link_index - that contains the columns:
+
+bctype
+childcode
+colname
+parentcode
+
+This will be maintained by bcindexer with the following methods:
+
+rebuildindex()
+
+-cleans out the table
+-goes through each type and finds the barcode columns
+-for each column, adds all entries into the index
+
+rebuildindex(@typenames)
+
+-as above but only for one type.
+-assumes that barcodes are never deleted, and hence can remove all related codes from the
+ index table easily
+
+indexcodes(@code)
+
+-for each code
+    -remove from the index table
+    -find the barcode columns
+    -add new index entries
+
+indexrange(x,y)
+
+-possibly an optimised version of indexcodes if you promise that the codes are in a continuous block
+
+I'd also like to be able to track across databases.  Currently, so long as the first two (or n) digits identify the database, you
+can give any barcode as the parent of a sample.  To track this back, I'd need to add an entry in the link_index table of the linked database.
+To provide for this in future I'm adding an external_id column that can be used to identify the linked DB.  For internal links this will be 
+null, and for external links this should be set to min_bar_code, making it easy to spot what came from where.  The primary key on the table will
+be childcode+columnname.
+
+* Modify barcodeUtil to call indexcodes()
+* Modify admin_barcodes to have a re-index button.
+
+But first, modify admin_barcodes to log all actions.

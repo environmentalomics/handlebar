@@ -80,7 +80,7 @@ A:hover, A:active  { color: #000066;  }
 	border-bottom:3px dotted #FFF;
 	/*height: 120px; */
 	background-image: url(http://envgen.nox.ac.uk/images/headbg1.jpg);
-	text-align:center;
+	text-align:left;
 }
 
 #topbanner h1 {
@@ -116,13 +116,14 @@ A:hover, A:active  { color: #000066;  }
 .navbanner_outer {
 	display: block;
 	position: relative;
-	top: -66px;
-	width: 100%;
+	top: -74px;
+	width: 82%;
+	margin: 2px;
 	text-align:left;
 	z-index:10;
 	/*for your IEs only... */
 	_padding:10px 0px 10px 0px;
-	_top: -72px;
+	_top: -80px;
 }
 	
 
@@ -130,7 +131,8 @@ A:hover, A:active  { color: #000066;  }
 	background-color: #EFF4DE;
 	color: #000000;
 	font: 13pt "Tahoma", sans-serif;
-	margin: 2px;
+	line-height: 206%;
+	margin: 0px;
         border-width: 1px;
         border-style: solid solid solid solid;
         border-color: #DDDDDD #666666 #666666 #DDDDDD;

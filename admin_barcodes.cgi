@@ -13,6 +13,7 @@ use strict; use warnings;
 use barcodeUtil;
 use barcodeTypeExporter;
 use Data::Dumper;
+# use IO::String; #Should not be needed for perl 5.8+
 
 # Grab config
 our %CONFIG = %{bcgetconfig()};
@@ -33,8 +34,8 @@ my $q = bcgetqueryobj();
 my $dbh;
 
 #What can we do?  Some things are still unimplemented.
-#my @ALLFUNCS = qw(steal split grow shrink convert usermodify blockmodify undispose deallocate export);
-my @ALLFUNCS = qw(steal usermodify blockmodify undispose deallocate export);
+#my @ALLFUNCS = qw(steal split grow shrink convert usermodify blockmodify undispose deallocate reindex export);
+my @ALLFUNCS = qw(steal split usermodify blockmodify undispose deallocate reindex export);
 my (%FORMS, %ACTIONS); #Hashes of functions - defined after main()
 
 # Determine what functions are available,passworded,disabled
@@ -83,40 +84,40 @@ sub main
     #Is there an action to do?
     if(my $action = $q->param('action'))
     {
-		#Special case for export_dl.  Should check the password, but never mind, this isn't the Pentagon...
-		if($action eq 'export_dl' && $funcs_avail{export})
-		{
-    		barcodeUtil::connectnow();
-			eval{print do_export_dl()};
-			my $lasterr = $@;
-			bcdisconnect();
-			return unless $lasterr;
+	#Special case for export_dl.  Should check the password, but never mind, this isn't the Pentagon...
+	if($action eq 'export_dl' && $funcs_avail{export})
+	{
+	    barcodeUtil::connectnow();
+	    eval{print do_export_dl()};
+	    my $lasterr = $@;
+	    bcdisconnect();
+	    return unless $lasterr;
 
-			#There must have been an error.
-			$output = gen_error($lasterr);
-		}
+	    #There must have been an error.
+	    $output = gen_error($lasterr);
+	}
     	else
+	{
+	    if($funcs_pwd{$action})
+	    {
+		if($PASSWORD_FOR_ADMIN = $q->param('password'))
 		{
-			if($funcs_pwd{$action})
-			{
-				if($PASSWORD_FOR_ADMIN = $q->param('password'))
-				{
-				$output = do_action($action);
-				}
-				else
-				{
-				$output = gen_error("You did not supply the correct password for action '$action'.");
-				}
-			}
-			elsif($funcs_avail{$action})
-			{
-				$output = do_action($action);
-			}
-			else
-			{
-				$output = gen_error("The action '$action' is either invalid or unavailable.");
-			}
+		    $output = do_action($action);
 		}
+		else
+		{
+		    $output = gen_error("You did not supply the correct password for action '$action'.");
+		}
+	    }
+	    elsif($funcs_avail{$action})
+	    {
+		$output = do_action($action);
+	    }
+	    else
+	    {
+		$output = gen_error("The action '$action' is either invalid or unavailable.");
+	    }
+	}
     }
 
     #Let's have some output
@@ -184,8 +185,26 @@ sub do_action
 	);
     barcodeUtil::connectnow();
     my $res = eval{ &$func(@_) };
+    my $error = $@;
     bcdisconnect();
-    $@ ? gen_error($@) : $res;
+#     $@ ? gen_error($@) : $res;
+
+    #Now with logging:
+    my $saved_query = '';
+    open my $ios, \$saved_query;
+    $q->save($ios);
+    if($error)
+    {
+	my $error_report = gen_error($error);
+
+	bclogevent( 'error', $action, int_nowarn($q->param('basecode')), undef,
+		    "$saved_query\n$error_report" );
+	return $error_report;
+    }
+    #else
+    bclogevent( 'admin', $action, int_nowarn($q->param('basecode')), undef,
+		"$saved_query\n$res" );
+    return $res;
 }
 
 sub gen_error
@@ -224,7 +243,7 @@ $FORMS{steal} = sub{
     $q->end_form(); 
 };
 
-$FORMS{split} = sub{
+$FORMS{"split"} = sub{
 
     my %params = @_;
 
@@ -408,6 +427,24 @@ $FORMS{deallocate} = sub{
 
 };
 
+$FORMS{reindex} = sub{
+
+    my %params = @_;
+
+    $q->h2("Rebuild the link index") .
+    $q->p("The link index table keeps track of which codes link to each other, allowing the query
+	   interface to find items that derive from other items.  In normal operation the index should
+	   be kept up-to-date by Handlebar as codes are added and updated, but you may choose to rebuild the whole
+	   index from scratch if need be.") .
+    $q->start_form() .
+    $q->hidden(-name=>'action') .
+    $q->table( {-class =>  "formtable"},
+	$params{passprompt},
+	$q->Tr($q->td( ["", "", $q->submit(-value=>"Go")] ))
+    ) .
+    $q->end_form();
+};
+
 $FORMS{export} = sub{
 
     my %params = @_;
@@ -469,6 +506,54 @@ $ACTIONS{steal} = sub{
     my $codecount = $tocode - $fromcode + 1;
     "The $codecount codes of type " . bczapunderscores($typename) . " beginning from " . bcquote($basecode) . " 
      have been stolen from $oldowner and now belong to $newowner";
+};
+
+$ACTIONS{"split"} = sub{
+ 
+    my $basecode = $q->param('basecode') or die "No base code given\n";
+    my $splitcode = $q->param('splitcode') or die "No code given to split on\n";
+    my $newcomment1 = $q->param('newcomment1');
+    my $newcomment2 = $q->param('newcomment2');
+
+    #Convert basecode and check it
+    $basecode = bcdequote($basecode);
+    $basecode == bcrangemembertobase($basecode) or die
+			"The code " . bcquote($basecode) . " is not the base of any block\n";
+
+    my( undef, undef, undef, $comments, $fromcode, $tocode) = bcgetinfofornumber($basecode);
+
+    $splitcode = bcdequote($splitcode);
+
+    #Now $splitcode will be the first code in the second block, so it must be greater than $fromcode
+    #and <= $tocode
+    ($splitcode > $fromcode && $splitcode <= $tocode) or die
+			bcquote($splitcode) . " is not within the range (" . bcquote($fromcode) . "-" .
+			bcquote($tocode) . "]";
+    
+    #OK, now I can check out the comments
+    $newcomment1 ||= $comments;
+    $newcomment2 ||= $comments;
+
+    #Insert the second allocation by cloning the first
+    my $sth;
+    $sth = bcprepare("INSERT INTO barcode_allocation (username, typename, fromcode, tocode, comments)
+		      SELECT username, typename, ?, tocode, ?
+		      FROM barcode_allocation 
+		      WHERE fromcode = ?");
+    $sth->execute($splitcode, $newcomment2, $fromcode);
+
+    #Modify the first allocation with the new range and comment
+    #Note this will result in a new timestamp for the seconf block but the old timestamp for the first block
+    $sth = bcprepare("UPDATE barcode_allocation SET
+		      tocode = ?,
+		      comments = ?
+		      WHERE fromcode = ?");
+    $sth->execute($splitcode - 1, $newcomment1, $fromcode);
+
+    bccommit();
+
+    "The block of " . ($tocode - $fromcode + 1) . " codes from " . bcquote($fromcode) . " to " . bcquote($tocode) . 
+    " has been split into two blocks, with the first code in the second block being " . bcquote($splitcode) . ".";
 };
 
 $ACTIONS{usermodify} = sub{
@@ -542,6 +627,44 @@ $ACTIONS{blockmodify} = sub{
     ($comments eq '' ? "There was no comment previously"
 		    : "The previous comment was '$comments'");
 };
+
+$ACTIONS{convert} = sub{
+
+    die "Not implemented";
+    #This is going to be fiddly.  Basic method would be
+
+    my $basecode = $q->param('basecode') or die "No base code given\n";
+    my $newtype = $q->param('newtype') or die "No target type specified\n";
+    my $forcemode = $q->param('forcemode') || 0;
+    my $dropmode = $q->param('dropmode') || 0;
+    
+    #Validate newtype exists.
+    #Get a list of barcodes for which data was logged
+    #If there is no data or we are in dropmode
+	#Remove all disposals for used codes, to enable re-uploading
+	#(keep disposals for unused ones)
+	#Scrub all data
+    #Else
+    #if forcemode
+    #	grab a list of all the columns in the source table
+    #	grab a list of all columns in the target table, with types
+    #	create an insert statement with explicit type conversions for
+    #	    all common columns (the explicit conversions permit string truncation etc)
+    #	run it (there may be errors due to impossible conversions or constraint violations)
+    #	remove from old table
+    #else
+    #	grab a list of columns in source and destination tables
+    #	for any column in the source which is not in the destination, see if there
+    #	    are any entries in the source codes where this column is not null, and
+    #	    if so fail
+    #	create an insert statement with no explicit casts, so that string truncation will
+    #	    raise an error
+    #	run it and see
+    #	remove from old table
+    #Update barcode_allocation to reflect the new type
+
+};
+
 
 #This is copy-and-pasted from request_barcodes.  Should be shared in barcodeUtil.
 #Designed to be totally watertight
@@ -681,6 +804,48 @@ $ACTIONS{deallocate} = sub{
     $disposal_count and $res .= "<br />$disposal_count of these had entries in the disposal table.";
 
     $res;
+};
+
+$ACTIONS{reindex} = sub{
+
+    #No parameters for this one.  The indexer code does support indexing only certain tables, but I can't
+    #really see a good reason for that.
+    
+    require barcodeIndexer;
+    import barcodeIndexer qw(rebuildindex);
+
+    my $sth;
+    #Lock the table just in case some parallel operation wants to update the
+    #index.  This is possibly redundant as the big delete should lock out the
+    #table for me.
+    $sth = bcprepare("LOCK $barcodeIndexer::INDEX_TABLE IN EXCLUSIVE MODE");
+    $sth->execute();
+
+    #See how many entries there are in the barcode_link_index table
+    #Some more fancy SQL coming up...
+    my $selecta = "SELECT n, count(barcode_link_index.*) 
+		   FROM $barcodeIndexer::INDEX_TABLE RIGHT OUTER JOIN
+		   (SELECT 'null' AS n
+		    UNION
+		    SELECT 'notnull' AS n) AS foo
+		   ON (n = 'null' AND external_id IS NULL)
+		      OR (n != 'null' AND external_id IS NOT NULL)
+		   GROUP BY n";
+    $sth = bcprepare($selecta);
+    $sth->execute();
+    my %linkcount1 = map {@$_} @{$sth->fetchall_arrayref()};
+
+    rebuildindex();
+ 
+    $sth = bcprepare($selecta);
+    $sth->execute();
+    my %linkcount2 = map {@$_} @{$sth->fetchall_arrayref()};
+
+    bccommit();
+
+    "The index has been rebuilt.  Previously the index table had $linkcount1{null} entries" .
+    ($linkcount1{notnull} ? ", as well as $linkcount1{notnull} entries relating to external codes." : ".") .
+    "<br />There are now $linkcount2{null} entries in the table.";
 };
 
 $ACTIONS{export} = sub{
