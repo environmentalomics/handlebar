@@ -133,6 +133,7 @@ sub start_read
   	    $fhrows[-1][$iC] = $cell->Value() if $cell;
 	    
 	    #Note that an empty cells wants to become undef.
+		next unless defined $fhrows[-1][$iC]; #Suppress undef warning
 	    $fhrows[-1][$iC] = undef unless $fhrows[-1][$iC] =~ /\S/;
 	}
     }
@@ -261,7 +262,7 @@ sub precalculate_formats
 	}
 	elsif ($format eq "0")
 	{
-	    push( @formats, {-num_format => 0});
+	    push( @formats, {-num_format => "0"});
 	}
 	elsif ($format =~ /\d+/)
 	{

@@ -194,6 +194,14 @@ sub reportoncode
     my $bcinfo = $sth->fetchrow_hashref();
     my $bcfields = $sth->{NAME_lc};
 
+    #Find anything in the links table
+    $sth = bcprepare("
+		SELECT childtype, childcode from barcode_link_index WHERE
+		parentcode = ?
+		");
+    $sth->execute($bc);
+    my @childcodes = @{$sth->fetchall_arrayref()};
+
     #See if this code was disposed, and if so print a warning.
     my ($dispdate, $dispcomments) = bcdisposedateandcomments($bc);
     if($dispdate)
@@ -261,6 +269,17 @@ sub reportoncode
 
 	&$printrow(@$_) for @demoted;
     }
+
+    #Finally list any links to child codes
+    if(@childcodes)
+    {
+	print $q->Tr( $q->td( [ "<b>Derived items</b>" => 
+		join( $q->br, map { codetolink($_->[1]) . ' (' .
+				    bczapunderscores($_->[0]) . ')'
+				  } @childcodes )
+			      ] ) ); 
+    }
+
     print $q->end_table();
 }
 

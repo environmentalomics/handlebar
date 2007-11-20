@@ -43,8 +43,8 @@ for($q)
 	if(mail_it_then($q->param('realname'), $q->param('email'), $q->param('comment'), $q->upload('sqlfile'), $q->param('sqlfile')))
 	{
 		$title = "You have submitted a Handlebar type template";
-		$result = "Thanks - a message has been sent and your template will be uploaded to
-		           the repository shortly.";
+		$result = "<b>Thankyou - a message has been sent and your template will be uploaded to
+		           the repository shortly.</b>";
 	}
 	else
 	{
@@ -63,8 +63,9 @@ print bcheader(), bcstarthtml($title),
 print $q->h2("Submit a template as a .sql file."),
       $q->start_multipart_form(-name=>"impform", -method=>"POST"),
 	  $q->p("
-You can use this form to send a type description to the Handlebar project maintainers.
-To export a file in the correct format use the export feature on the Extra Admin tab.
+You can use this form to send a type template to the Handlebar project maintainers for inclusion
+in the repository.
+To export a file in the correct format use the <em>export</em> feature on the Extra Admin tab.
 The information entered into this form will be e-mailed to <em>$SUBMIT_MAIL_ADDRESS</em>."
 	  ),
 	  $q->table( {-class=>"formtable"},
@@ -96,16 +97,16 @@ sub mail_it_then
 	}
 	my $msg = MIME::Lite->new(
 			To => $SUBMIT_MAIL_ADDRESS,
-            From => "$user@$host",
+            From => "$user\@$host",
 			Subject => "A barcode template submission from $realname",
 			Type    => 'multipart/mixed',
 	);
 
 	$msg->attach( Type => "TEXT",
 				  Data => join('', 
-					  "Mail generated at ", scalar(localtime()), ".\n",
-					  "From $realname ($email) on ", $q->http('remote_host'), ".\n",
-					  "Filename is $sqlfilename.\n\n",
+					  " Mail generated at ", scalar(localtime()), ".\n",
+					  " From $realname ($email) on ", $q->remote_host(), ".\n",
+					  " Filename is $sqlfilename.\n\n",
 					  "BYE.\n" )
 				);
 	

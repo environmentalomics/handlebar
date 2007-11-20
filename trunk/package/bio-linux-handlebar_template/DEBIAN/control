@@ -1,5 +1,5 @@
 Package: bio-linux-handlebar
-Version: 2.0.2
+Version: 2.1beta-1
 Section: science
 Priority: optional
 Depends: httpd-cgi, perl, libdbd-pg-perl, libconfig-simple-perl, libio-string-perl, libmailtools-perl, libtext-csv-perl, libdbd-anydata-perl (>= 0.08), debconf (>= 0.2.26), libspreadsheet-parseexcel-perl, libspreadsheet-writeexcel-perl, bio-linux-genquery

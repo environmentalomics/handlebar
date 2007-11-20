@@ -78,7 +78,7 @@ BODY { margin:0px 0px 0px 0px;}
 	margin: 0px 0 0 0 ;
 	border-bottom:3px dotted #FFF;
 	/*height: 120px; */
-	text-align:center;
+	text-align:left;
 }
 
 #topbanner h1 {
@@ -114,13 +114,14 @@ BODY { margin:0px 0px 0px 0px;}
 .navbanner_outer {
 	display: block;
 	position: relative;
-	top: -66px;
-	width: 100%;
+	top: -74px;
+	width: 82%;
+	margin: 2px;
 	text-align:left;
 	z-index:10;
 	/*for your IEs only... */
 	_padding:10px 0px 10px 0px;
-	_top: -72px;
+	_top: -80px;
 }
 	
 
@@ -128,7 +129,8 @@ BODY { margin:0px 0px 0px 0px;}
 	background-color: #DBDBDB;
 	color: #000000;
 	font: 13pt "Tahoma", sans-serif;
-	margin: 2px;
+	line-height: 206%;
+	margin: 0px;
         border-width: 1px;
         border-style: solid solid solid solid;
         border-color: #DDDDDD #666666 #666666 #DDDDDD;

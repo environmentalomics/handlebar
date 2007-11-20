@@ -1,0 +1,93 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset=iso-8859-1" >
+    <link rel="stylesheet" type="text/css" href="../../genquery/gqstyle.css" />
+    <style xmlns="" type="text/css">
+	<!-- /* Put CSS overrides in here! */
+	.report{ margin: 10px }
+	-->
+    </style>
+
+    <title>GenQuery debugging <TMPL_VAR NAME="QUERY_TITLE"></title>
+</head>
+<!--
+#	Template used when a query is run in debug mode.  GenQuery will supply
+#	everything seen by the results template as well as the unparsed query and
+#	the query as fed to DBI.  If the query fails, instead of falling back
+#	to the error template an empty result set will be generated and 
+#	LAST_DBI_ERROR will be set.
+#	You may want to fold this into either the debug or results templates.
+#	if so, the presence of UNPARSED_QUERY will indicate that the template
+#	is being used in debug mode.
+#
+#       After public_catalogue.php              J.Wood 11/8/04
+#       NERC Environmental Bioinformatics Centre
+#       http://nebc.nox.ac.uk
+-->
+<body>
+<div id="banner" align="center">
+
+<!--Banner-->
+
+GenQuery Query Debugger<br />
+<span class="description"></span>
+</div></center>
+
+<h2>Query Name</h2>
+
+<div class="report">
+<TMPL_VAR NAME="QUERY_TITLE">
+</div>
+
+<h2>Unparsed Query</h2>
+
+<div class="report">
+<pre>
+<TMPL_VAR NAME="UNPARSED_QUERY">
+</pre>
+</div>
+
+<h2>Parameters passed in (quoted)</h2>
+
+<div class="report">
+<pre>
+<TMPL_VAR NAME="DUMPED_QUERY_PARAMETERS">
+</pre>
+</div>
+
+<h2>Command Run</h2>
+
+<div class="report">
+<pre>
+<TMPL_VAR NAME="LAST_SQL_COMMAND">
+</pre>
+</div>
+
+<TMPL_IF NAME="LAST_DBI_ERROR">
+<h2>SQL Error</h2>
+
+<div class="error">
+<TMPL_VAR NAME="LAST_DBI_ERROR">
+</div>
+</TMPL_IF>
+
+<h2>Results (showing special columns)</h2>
+
+<p><b>Records returned: <TMPL_VAR NAME="ROWS_RETURNED"></b></p>
+
+<!-- Set table styles by CSS references to htable -->
+<TMPL_IF NAME="ROWS_RETURNED">
+    <table class="rtable" bgcolor="#EEEEEE">
+	<!-- <TH><font size=-1 color="#666666">Name</font></TH> -->
+	<tr align="left" valign="top"><TMPL_VAR NAME="RESULTS_TABLE_HEADER"></tr>
+
+	<TMPL_LOOP name="RESULTS_TABLE_ROW">
+	    <tr align="left" valign="top"><TMPL_VAR NAME="ROW_DATA"></tr>
+	</TMPL_LOOP>
+    </table>
+</TMPL_IF>
+
+<h3><a href='<TMPL_VAR NAME="PERMALINK">'>Re-run in normal mode</a></h3>
+
+</body>
+<!-- C'est ca! -->

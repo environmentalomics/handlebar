@@ -7,7 +7,8 @@ use strict; use warnings;
 #barcode database interface.  It depends on barcode_db.
 #It could be done in an OOP style, but since there is only one
 #connection per invocation of the script this seems overkill.  Maybe
-#if I try to use this with mod_perl I will come unstuck?
+#if I try to use this with mod_perl I will come unstuck?  
+# -- Yes, totally!  See the notes in request_barcodes.cgi
 
 # Note to future developers:  I apologise for the messyness of this code and for request_barcodes.cgi.
 # Reasons for this include:
@@ -37,7 +38,7 @@ require barcodeDB;
 #Other modules we use:
 use Carp;
 use Config::Simple;
-use CGI qw(Vars http);
+use CGI qw(Vars http escapeHTML);
 use DBI;
 use Data::Dumper; #For teh debugging
 use Fcntl qw(:DEFAULT :flock); #File locking
@@ -46,8 +47,12 @@ use IO::String;
 { package IO::String; sub str{${shift()->string_ref }} }
 
 #CGI stuff - use CGI::Carp only if called via a browser.
-my $q = new CGI;
-BEGIN { if(http()){ 
+our ($q, $conf);
+BEGIN { if($ENV{GATEWAY_INTERFACE}){
+    
+    #I previously used "if(http())" to test if the script was actually running under CGI but this
+    #upsets the Vim Perl checker and maybe other things.
+
     require CGI::Carp; import CGI::Carp qw(fatalsToBrowser);
 
     #Linking to my mail address is great for debugging on our internal systems, but when external users are
@@ -55,34 +60,33 @@ BEGIN { if(http()){
     #date?  Nope!
     
     my $carper = sub{
-	my $err = shift(); 
+	    my $err = shift(); 
 
-	#Have to tread very carefully to avoid messing up Config::Simple.  Try to
-	#find the correct e-mail address in the config file.
-	our $conf;
-	unless($conf)
-	{
-	    eval{
-	    Config::Simple->import_from('barcodes.conf', $conf);
-	    };
-	    $conf = {} if $@;
-	}
-	my $contact = $conf->{PAGE_MAINTAINER} || "the website maintainer";
-	
-	print "
-	<h1>Software error:</h1>
-	Sorry.  There was an error processing your request.  There is either a bug in the 
-	code running on the website or something has been misconfigured.  Please help
-	to debug the system by reporting the problem.  Save this entire page and mail it to 
-	$contact.
-	<p>Time: ", scalar(gmtime), " UTC.</p>
-	<p>Error message: <pre>", $err, "</pre></p>
-	<p>Param dump: <pre>",
-	$q->escapeHTML(Dumper({$q->Vars()})), "</pre>";
+	    #Have to tread very carefully to avoid messing up Config::Simple.  Try to
+	    #find the correct e-mail address in the config file.
+	    our $conf;
+	    unless($conf)
+	    {
+		    eval{
+		    Config::Simple->import_from('barcodes.conf', $conf);
+		    };
+		    $conf = {} if $@;
+	    }
+	    my $contact = $conf->{PAGE_MAINTAINER} || "the website maintainer";
+	    
+	    print "
+	    <h1>Software error:</h1>
+	    Sorry.  There was an error processing your request.  There is either a bug in the 
+	    code running on the website or something has been misconfigured.  Please help
+	    to debug the system by reporting the problem.  Save this entire page and mail it to 
+	    $contact.
+	    <p>Time: ", scalar(gmtime), " UTC.</p>
+	    <p>Error message: <pre>", $err, "</pre></p>
+	    <p>Param dump: <pre>",
+	    escapeHTML(Dumper({$q->Vars()})), "</pre>";
     };		    
     CGI::Carp::set_message($carper);
 } };
-
 #This is not a general purpose module - export everything!
 our @ISA = qw(Exporter);
 our @EXPORT = qw(int_nowarn nsort);
@@ -93,31 +97,42 @@ our @EXPORT = qw(int_nowarn nsort);
   push @EXPORT, grep {/^bc/ && $x->can($_)} keys %{__PACKAGE__.::}
 };
 
-our $conf = {};
-Config::Simple->import_from('barcodes.conf', $conf);
-#Compensate for broken Config::Simple
-for(keys %$conf)
+#Eek - a big nasty list of globals :-(
+our( $MAX_CODES, $CODE_BLOCK_SIZE, $MIN_BAR_CODE, $PREFIX_LENGTH, $POSTFIX_LENGTH, $SPACER_CHAR,
+	 $STYLESHEET, $CUSTOM_FOOTER, $HELP_LINK, $ENABLE_PRINTING, $ENABLE_ADMIN, $ENABLE_REPORTS,
+	 $STRICT_USER_NAMES, $LOG_DIRECTORY, $DATA_SCHEMA, $divs_open,
+	);
+
+sub _setup
 {
-    undef($conf->{$_}) if (ref($conf->{$_}) eq 'ARRAY' && @{$conf->{$_}} == 0 );
+	return if $q;  #Only setup once!  Oh dear, this is messy :-(
+	$q = new CGI;
+	$conf = {};
+
+	Config::Simple->import_from('barcodes.conf', $conf);
+	#Compensate for broken Config::Simple
+	for(keys %$conf)
+	{
+		undef($conf->{$_}) if (ref($conf->{$_}) eq 'ARRAY' && @{$conf->{$_}} == 0 );
+	}
+
+	$MAX_CODES = $conf->{MAX_CODES} || 1000;
+	$CODE_BLOCK_SIZE = $conf->{CODE_BLOCK_SIZE} || 100;
+	$MIN_BAR_CODE = bcdequote($conf->{MIN_BAR_CODE});
+	$PREFIX_LENGTH = $conf->{PREFIX_LENGTH} || 0;
+	$POSTFIX_LENGTH = $conf->{POSTFIX_LENGTH} || 0;
+	$SPACER_CHAR = $conf->{SPACER_CHAR} || '';
+	$STYLESHEET = $conf->{STYLESHEET} || 'bcstyle.css';
+	$CUSTOM_FOOTER = $conf->{CUSTOM_FOOTER} || 'barcodes.footer.html';
+	$HELP_LINK = $conf->{HELP_LINK} || '../../handlebar/user_guide.pdf';
+	$ENABLE_PRINTING = $conf->{ENABLE_PRINTING} ? 1 : 0;
+	$ENABLE_ADMIN = $conf->{ENABLE_ADMIN} ? 1 : 0;
+	$ENABLE_REPORTS = $conf->{ENABLE_REPORTS} ? 1 : 0;
+	$STRICT_USER_NAMES = $conf->{STRICT_USER_NAMES} ? 1 : 0;
+	$LOG_DIRECTORY = $conf->{LOG_DIRECTORY};
+
+	$divs_open = 0;
 }
-
-our $MAX_CODES = $conf->{MAX_CODES} || 1000;
-our $CODE_BLOCK_SIZE = $conf->{CODE_BLOCK_SIZE} || 100;
-our $MIN_BAR_CODE = bcdequote($conf->{MIN_BAR_CODE});
-our $PREFIX_LENGTH = $conf->{PREFIX_LENGTH} || 0;
-our $POSTFIX_LENGTH = $conf->{POSTFIX_LENGTH} || 0;
-our $SPACER_CHAR = $conf->{SPACER_CHAR} || '';
-our $STYLESHEET = $conf->{STYLESHEET} || 'bcstyle.css';
-our $CUSTOM_FOOTER = $conf->{CUSTOM_FOOTER} || 'barcodes.footer.html';
-our $HELP_LINK = $conf->{HELP_LINK} || '../../handlebar/user_guide.pdf';
-our $ENABLE_PRINTING = $conf->{ENABLE_PRINTING} ? 1 : 0;
-our $ENABLE_ADMIN = $conf->{ENABLE_ADMIN} ? 1 : 0;
-our $ENABLE_REPORTS = $conf->{ENABLE_REPORTS} ? 1 : 0;
-our $STRICT_USER_NAMES = $conf->{STRICT_USER_NAMES} ? 1 : 0;
-our $LOG_DIRECTORY = $conf->{LOG_DIRECTORY};
-our $DATA_SCHEMA;
-
-our $divs_open = 0;
 
 #Rather than attempt to prise out all the database interaction into
 #yet another layer, for now this module will mostly access the database handle directly.
@@ -132,9 +147,9 @@ sub connectnow
     %$actualconf or die "Problem reading config file. Configuration is empty!\n";
 
     eval{
-	$dbobj = barcodeDB->new($actualconf);
-	$dbh = $dbobj->get_handle();
-	$DATA_SCHEMA = $dbobj->get_data_schema();
+		$dbobj = barcodeDB->new($actualconf);
+		$dbh = $dbobj->get_handle();
+		$DATA_SCHEMA = $dbobj->get_data_schema();
     };
     #Now if the connection fails, die immediately if under CGI
     $@ and http() ? die $@ : warn $@;
@@ -153,10 +168,10 @@ sub connectnow
 #The logging is a bit fiddly.  If no log dir is set then this will just return.
 sub bclogevent
 {
-    #Event type can be alloc/disp/upload/error
+    #Event type can be alloc/disp/upload/error/admin
     my $event_type = shift;
     my $user_name = shift;
-    my $base_code = shift;
+    my $base_code = shift; #optional
     my $file_extension = shift;
     my $data = shift;
 
@@ -235,6 +250,8 @@ sub bclogevent
 
 sub import
 {
+    _setup();
+
     #Connect to DB if -connect argument given.
     my @args;
     for(@_)
@@ -280,7 +297,7 @@ my $ios = new IO::String;
 			-title=>$title,
 			@_);
     }
-    
+
 $ios->str;
 }
 
@@ -341,7 +358,7 @@ my $ios = new IO::String;
     #Printing is offered by default but can be suppressed
     if($ENABLE_PRINTING)
     {
-	push @sections, { href=>"print_barcodes.cgi",   label=>"Barcode printing" };
+		push @sections, { href=>"print_barcodes.cgi",   label=>"Barcode printing" };
     }
 
     #Admin is offered by default but can be suppressed
@@ -352,29 +369,29 @@ my $ios = new IO::String;
 	
     if($HELP_LINK)
     {
-	push @sections, { href=>$HELP_LINK, label=>"Help", target=>"_blank" };
+		push @sections, { href=>$HELP_LINK, label=>"Help", target=>"_blank" };
     }
 
     #See what page we are on, only if there were no params:
     unless($q->param())
     {
-	my $url = $q->url(-relative=>1);
-	
-	for(@sections)
-	{
-	    $_->{current} = 1 if ($_->{href} eq $url);
-	}
+		my $url = $q->url(-relative=>1);
+		
+		for(@sections)
+		{
+			$_->{current} = 1 if ($_->{href} eq $url);
+		}
     }
     
     my $nbsp = sub{
-	(my $foo = "@_") =~ s/ /&nbsp;/g;
-	$foo;
+		(my $foo = "@_") =~ s/ /&nbsp;/g;
+		$foo;
     };
 
     unless($divs_open)
     {	
-	$divs_open++;
-	print $ios $q->start_div({-id=>"topbanner"});
+		$divs_open++;
+		print $ios $q->start_div({-id=>"topbanner"});
     }
     print $ios	
       $q->div( {-class=>'navbanner_outer'},
@@ -405,7 +422,7 @@ sub bcgetcolumninfo
     while($row = $sth->fetchrow_hashref())
     {
 	$descidx->{$row->{COLUMN_NAME}} = @$descdata;
-	push @$descdata, $row;
+	push (@$descdata, $row);
 
 	#Remove any undefined remarks to allow defaults to be added.
 	delete $row->{REMARKS} unless defined $row->{REMARKS};
@@ -415,7 +432,7 @@ sub bcgetcolumninfo
 #Return a type description in HTML, given a type name
 sub bcdescribetype
 {
-my $ios = new IO::String;
+    my $ios = new IO::String;
     my $atype = shift();
     my($typenotes, $sth, @row, $row, $fieldname);
     my(%descidx, @descdata); #This will be a pseudo-pseudohash
@@ -860,19 +877,17 @@ sub bcrangemembertobase
 	  );
 }
 
-
 sub bcallocate
 {
     #Allocate a block of codes and return the base index
-    my $quantity = shift();
-    my $username = shift();
-    my $bctype = shift();
-    my $comments = shift() || "";
+    my ($quantity, $username, $bctype, $comments) = @_;
+    $comments ||= "";
 
     #We have a potential race condition in that two invocations of this script
     #could both run at once, get the same value for the $lastbase and
     #thus attempt to allocate conflicting ranges.  The PostgreSQL specific
-    #fix is to grab a write-lock before we do anything else:
+    #fix is to grab a write-lock before we do anything else
+	#(note - exclusive mode really is a write lock, despite the name):
     $dbh->do("LOCK barcode_allocation IN EXCLUSIVE MODE");
     
     #Determine next starting base
@@ -883,18 +898,18 @@ sub bcallocate
     #There will be no zero barcode, so the very first allocation
     #returns CODEBLOCKSIZE, or MINBARCODE if set.
     if(! $lastbase){ 
-	$lastbase = $MIN_BAR_CODE || $CODE_BLOCK_SIZE; 
+		$lastbase = $MIN_BAR_CODE || $CODE_BLOCK_SIZE; 
     }
     else
     {
-	#Remember that the last returned value is already allocated.
-	$lastbase++;
+		#Remember that the last returned value is already allocated.
+		$lastbase++;
 
-	if($lastbase % $CODE_BLOCK_SIZE)
-	{
-	    #Round-up needed
-	    $lastbase += $CODE_BLOCK_SIZE - ($lastbase % $CODE_BLOCK_SIZE);
-	}
+		if($lastbase % $CODE_BLOCK_SIZE)
+		{
+			#Round-up needed
+			$lastbase += $CODE_BLOCK_SIZE - ($lastbase % $CODE_BLOCK_SIZE);
+		}
     }
 
     #Log the allocation in the database

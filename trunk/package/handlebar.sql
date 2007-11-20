@@ -529,7 +529,8 @@ CREATE TABLE query_param (
     param_type character varying(10) NOT NULL,
     param_name character varying(20),
     param_text text,
-    menu_query text
+    menu_query text,
+    suppress_all boolean
 ) WITHOUT OIDS;
 
 
@@ -667,7 +668,91 @@ SET SESSION AUTHORIZATION 'postgres';
 SET search_path = handlebar_sys, pg_catalog;
 
 --
--- TOC entry 52 (OID 4561150)
+-- TOC entry 51 (OID 4573812)
+-- Name: barcode_collection; Type: TABLE; Schema: handlebar_sys; Owner: postgres
+--
+
+CREATE TABLE barcode_collection (
+    prefix character varying(20) NOT NULL,
+    id integer NOT NULL,
+    nickname character varying(20),
+    username character varying(20) NOT NULL,
+    comments text,
+    creation_datestamp date DEFAULT ('now'::text)::date NOT NULL,
+    modification_datestamp date DEFAULT ('now'::text)::date NOT NULL
+);
+
+
+--
+-- TOC entry 52 (OID 4573812)
+-- Name: barcode_collection; Type: ACL; Schema: handlebar_sys; Owner: postgres
+--
+
+REVOKE ALL ON TABLE barcode_collection FROM PUBLIC;
+GRANT ALL ON TABLE barcode_collection TO "www-data";
+
+
+SET SESSION AUTHORIZATION 'postgres';
+
+--
+-- TOC entry 53 (OID 4573827)
+-- Name: barcode_collection_item; Type: TABLE; Schema: handlebar_sys; Owner: postgres
+--
+
+CREATE TABLE barcode_collection_item (
+    collection_id integer NOT NULL,
+    barcode bigint NOT NULL,
+    rank bigint NOT NULL
+);
+
+
+--
+-- TOC entry 54 (OID 4573827)
+-- Name: barcode_collection_item; Type: ACL; Schema: handlebar_sys; Owner: postgres
+--
+
+REVOKE ALL ON TABLE barcode_collection_item FROM PUBLIC;
+GRANT ALL ON TABLE barcode_collection_item TO "www-data";
+
+
+SET SESSION AUTHORIZATION 'postgres';
+
+SET search_path = handlebar_data, pg_catalog;
+
+--
+-- TOC entry 79 (OID 4574292)
+-- Name: array_accum(anyelement); Type: AGGREGATE; Schema: handlebar_data; Owner: postgres
+--
+
+CREATE AGGREGATE array_accum (
+    BASETYPE = anyelement,
+    SFUNC = array_append,
+    STYPE = anyarray,
+    INITCOND = '{}'
+);
+
+
+SET search_path = genquery, pg_catalog;
+
+--
+-- TOC entry 55 (OID 4574864)
+-- Name: query_linkout; Type: TABLE; Schema: genquery; Owner: postgres
+--
+
+CREATE TABLE query_linkout (
+    query_id integer NOT NULL,
+    url text NOT NULL,
+    label text,
+    name character varying(20) NOT NULL,
+    key_column character varying(20) NOT NULL,
+    pack boolean DEFAULT false NOT NULL
+) WITHOUT OIDS;
+
+
+SET search_path = handlebar_sys, pg_catalog;
+
+--
+-- TOC entry 57 (OID 4561150)
 -- Name: allocation_name_idx; Type: INDEX; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -675,7 +760,7 @@ CREATE INDEX allocation_name_idx ON barcode_allocation USING btree (username);
 
 
 --
--- TOC entry 51 (OID 4561151)
+-- TOC entry 56 (OID 4561151)
 -- Name: barcode_user_pkey; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -684,7 +769,7 @@ ALTER TABLE ONLY barcode_user
 
 
 --
--- TOC entry 53 (OID 4561153)
+-- TOC entry 58 (OID 4561153)
 -- Name: barcode_allocation_fromcode_key; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -693,7 +778,7 @@ ALTER TABLE ONLY barcode_allocation
 
 
 --
--- TOC entry 54 (OID 4561155)
+-- TOC entry 59 (OID 4561155)
 -- Name: barcode_allocation_tocode_key; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -702,7 +787,7 @@ ALTER TABLE ONLY barcode_allocation
 
 
 --
--- TOC entry 55 (OID 4561157)
+-- TOC entry 60 (OID 4561157)
 -- Name: pk_barcode_description; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -711,7 +796,7 @@ ALTER TABLE ONLY barcode_description
 
 
 --
--- TOC entry 56 (OID 4561159)
+-- TOC entry 61 (OID 4561159)
 -- Name: barcode_deletion_pk; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
 --
 
@@ -722,7 +807,7 @@ ALTER TABLE ONLY barcode_deletion
 SET search_path = handlebar_data, pg_catalog;
 
 --
--- TOC entry 57 (OID 4561161)
+-- TOC entry 62 (OID 4561161)
 -- Name: pk_generic; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -731,7 +816,7 @@ ALTER TABLE ONLY generic
 
 
 --
--- TOC entry 58 (OID 4561165)
+-- TOC entry 63 (OID 4561165)
 -- Name: pk_pcr_products; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -740,7 +825,7 @@ ALTER TABLE ONLY pcr_products
 
 
 --
--- TOC entry 59 (OID 4561167)
+-- TOC entry 64 (OID 4561167)
 -- Name: biofilm_sample_pkey; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -749,7 +834,7 @@ ALTER TABLE ONLY biofilm_sample
 
 
 --
--- TOC entry 60 (OID 4561169)
+-- TOC entry 65 (OID 4561169)
 -- Name: fish_sample_pkey; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -758,7 +843,7 @@ ALTER TABLE ONLY fish_individual
 
 
 --
--- TOC entry 61 (OID 4561171)
+-- TOC entry 66 (OID 4561171)
 -- Name: pk_transformation_mix; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -767,7 +852,7 @@ ALTER TABLE ONLY transformation_mix
 
 
 --
--- TOC entry 62 (OID 4561179)
+-- TOC entry 67 (OID 4561179)
 -- Name: soil_sample_pkey; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -776,7 +861,7 @@ ALTER TABLE ONLY soil_sample
 
 
 --
--- TOC entry 63 (OID 4561183)
+-- TOC entry 68 (OID 4561183)
 -- Name: pk_subclone_plate; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -785,7 +870,7 @@ ALTER TABLE ONLY subclone_plate
 
 
 --
--- TOC entry 64 (OID 4561185)
+-- TOC entry 69 (OID 4561185)
 -- Name: sediment_sample_pkey; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -794,7 +879,7 @@ ALTER TABLE ONLY sediment_sample
 
 
 --
--- TOC entry 65 (OID 4561187)
+-- TOC entry 70 (OID 4561187)
 -- Name: pk_library_plate; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -805,7 +890,7 @@ ALTER TABLE ONLY library_plate
 SET search_path = genquery, pg_catalog;
 
 --
--- TOC entry 66 (OID 4561189)
+-- TOC entry 71 (OID 4561189)
 -- Name: pk_query_def; Type: CONSTRAINT; Schema: genquery; Owner: postgres
 --
 
@@ -814,7 +899,7 @@ ALTER TABLE ONLY query_def
 
 
 --
--- TOC entry 67 (OID 4561191)
+-- TOC entry 72 (OID 4561191)
 -- Name: pk_query_param; Type: CONSTRAINT; Schema: genquery; Owner: postgres
 --
 
@@ -825,7 +910,7 @@ ALTER TABLE ONLY query_param
 SET search_path = handlebar_data, pg_catalog;
 
 --
--- TOC entry 68 (OID 4562239)
+-- TOC entry 73 (OID 4562239)
 -- Name: pk_water_sample; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
@@ -834,12 +919,52 @@ ALTER TABLE ONLY water_sample
 
 
 --
--- TOC entry 69 (OID 4562266)
+-- TOC entry 74 (OID 4562266)
 -- Name: pk_nucleic_acid_extracts; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres
 --
 
 ALTER TABLE ONLY nucleic_acid_extracts
     ADD CONSTRAINT pk_nucleic_acid_extracts PRIMARY KEY (barcode);
+
+
+SET search_path = handlebar_sys, pg_catalog;
+
+--
+-- TOC entry 76 (OID 4573819)
+-- Name: barcode_collection_pkey; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
+--
+
+ALTER TABLE ONLY barcode_collection
+    ADD CONSTRAINT barcode_collection_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 75 (OID 4573821)
+-- Name: barcode_collection_nickname_key; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
+--
+
+ALTER TABLE ONLY barcode_collection
+    ADD CONSTRAINT barcode_collection_nickname_key UNIQUE (nickname);
+
+
+--
+-- TOC entry 77 (OID 4573829)
+-- Name: pk_barcode_collection_item; Type: CONSTRAINT; Schema: handlebar_sys; Owner: postgres
+--
+
+ALTER TABLE ONLY barcode_collection_item
+    ADD CONSTRAINT pk_barcode_collection_item PRIMARY KEY (collection_id, barcode);
+
+
+SET search_path = genquery, pg_catalog;
+
+--
+-- TOC entry 78 (OID 4574870)
+-- Name: pk_query_linkout; Type: CONSTRAINT; Schema: genquery; Owner: postgres
+--
+
+ALTER TABLE ONLY query_linkout
+    ADD CONSTRAINT pk_query_linkout PRIMARY KEY (query_id, name);
 
 
 SET SESSION AUTHORIZATION 'postgres';
@@ -950,6 +1075,28 @@ SET search_path = genquery, pg_catalog;
 -- Name: query_def; Type: TABLE DATA; Schema: genquery; Owner: postgres
 --
 
+INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (40, 'Data Summary', 'Show Data', 'Shows basic data entered about a range of codes', false, NULL, 'Barcode;<linknoterms;Storage Location;Creation Date;Storage Date;Created By', 'select to_char(g.barcode, ''FM00-000000'')
+,''query_barcodes.cgi?bc='' || to_char(g.barcode, ''FM00-000000'') as link
+,storage_location
+,creation_date
+,storage_date
+,created_by 
+,g.comments
+,d.datestamp as disposed
+from generic g
+left outer join barcode_deletion d on g.barcode = d.barcode
+where true
+$?FROMCODE{{ and
+  $?TOCODE{{ g.barcode >= replace($FROMCODE, ''-'','''')::int8 
+  and g.barcode <= replace($TOCODE, ''-'','''')::int8 }}
+  $!TOCODE{{ g.barcode = replace($FROMCODE, ''-'','''')::int8 }}
+}}
+$?FROMDATE{{ and
+  $?TODATE{{ g.creation_date >= $FROMDATE::date 
+  and g.creation_date <= $TODATE::date }}
+  $!TODATE{{ g.creation_date = $FROMDATE::date }}
+}}
+', NULL);
 INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (5, 'Show Database Statistics', 'General Reports', 'Show overall info on the database', false, NULL, '<hide;Stat;Value', 'select 1 as row, ''Registered Users'' as stat, count(*) as val from barcode_user
 union
 select 2 as row, ''Barcode Types'' as stat, count(*) as val from pg_tables
@@ -1019,47 +1166,7 @@ left outer join (data.generic g inner join pg_class pgc
 ) on g.barcode = nae.sample_barcode
 where se.barcode >= $BASECODE::int8
 and se.barcode < $BASECODE::int8 + 96', NULL);
-INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (40, 'Data Summary', 'Show Data', 'Shows basic data entered about a range of codes', false, NULL, 'Barcode;<linknoterms;Storage Location;Creation Date;Storage Date;Created By', 'select to_char(g.barcode, ''FM00-000000'')
-,''query_barcodes.cgi?bc='' || to_char(g.barcode, ''FM00-000000'') as link
-,storage_location
-,creation_date
-,storage_date
-,created_by 
-,g.comments
-,d.datestamp as disposed
-from generic g
-left outer join barcode_deletion d on g.barcode = d.barcode
-where true
-$?FROMCODE{{ and
-  $?TOCODE{{ g.barcode >= replace($FROMCODE, ''-'','''')::int8 
-  and g.barcode <= replace($TOCODE, ''-'','''')::int8 }}
-  $!TOCODE{{ g.barcode = replace($FROMCODE, ''-'','''')::int8 }}
-}}
-$?FROMDATE{{ and
-  $?TODATE{{ g.creation_date >= $FROMDATE::date 
-  and g.creation_date <= $TODATE::date }}
-  $!TODATE{{ g.creation_date = $FROMDATE::date }}
-}}
-', NULL);
 INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (16, 'All Type Definitions', 'General Reports', 'Link to the type description page', false, NULL, NULL, NULL, 'request_barcodes.cgi?typespopup=1');
-INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (10, 'Show Users', 'General Reports', 'Summarise registered users', false, NULL, 'Username;Real Name;E-Mail;Institute;Blocks Allocated;Codes Allocated;<pivotquery;Codes in Use', 'select bu.username, bu.realname, ''*blocked*'', bu.institute,
-count(ba.*),
-sum(ba.tocode - ba.fromcode + 1) as allocated,
-''Show Allocations'' as pivot,
-sum(active) as active
-from barcode_user bu 
-$!ONLYBARCODES{{ left outer join }}
-$?ONLYBARCODES{{ inner join }} 
-( barcode_allocation ba 
-inner join count_used_by_block us on us.fromcode = ba.fromcode
-inner join count_active_by_block act on act.fromcode = ba.fromcode
-) on bu.username = ba.username
-where true
-$?USERNAME{{ and $USERNAME = ba.username }}
-$?REALNAME{{ and $REALNAME = bu.realname }}
-$?INST{{ and $INST = bu.institute }}
-group by bu.username, bu.realname, bu.email, bu.institute
-', NULL);
 INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (20, 'Show Allocations', 'General Reports', 'Shows the blocks of codes allocated to users', false, NULL, 'Username;<pivotquery;Item Type;<pivotquery;<hide;Size;Range;Used;Active;Disposed;Free;<hide;<hide;Comments;Date;Show Data;<pivotquery', 'select ba.username, ''Show Users'' as pivot,
 replace( ba.typename, ''_'', '' '') as typename, 
 ''Show Types'' as pivot2, 1 as showdisabled,
@@ -1088,6 +1195,24 @@ $?CODE{{ and ba.fromcode <= replace($CODE, ''-'', '''')::int8
           and ba.tocode >= replace($CODE, ''-'', '''')::int8 }}
 order by datestamp
 $?MRF{{ desc }}', NULL);
+INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (10, 'Show Users', 'General Reports', 'Summarise registered users', false, NULL, 'Username;Real Name;E-Mail;Institute;Blocks Allocated;Codes Allocated;<pivotquery;Codes in Use', 'select bu.username, bu.realname, ''*blocked*'', bu.institute,
+count(ba.*),
+sum(ba.tocode - ba.fromcode + 1) as allocated,
+''Show Allocations'' as pivot,
+sum(active) as active
+from barcode_user bu 
+$!ONLYBARCODES{{ left outer join }}
+$?ONLYBARCODES{{ inner join }} 
+( barcode_allocation ba 
+inner join count_used_by_block us on us.fromcode = ba.fromcode
+inner join count_active_by_block act on act.fromcode = ba.fromcode
+) on bu.username = ba.username
+where true
+$?USERNAME{{ and $USERNAME = ba.username }}
+$?REALNAME{{ and $REALNAME = bu.realname }}
+$?INST{{ and $INST = bu.institute }}
+group by bu.username, bu.realname, bu.email, bu.institute
+', NULL);
 INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (45, 'Full Data View', 'Show Data', 'Show all information on a group of barcodes.  You need to specify the barcode type explicitly for this to work.', false, NULL, 'Barcode;<linknoterms;<hide', 'select to_char(g.barcode, ''FM00-000000'')
 ,''query_barcodes.cgi?bc='' || to_char(g.barcode, ''FM00-000000'') as link,
 g.* from $_BCTYPE $!BCTYPE{{ generic }} g
@@ -1114,6 +1239,29 @@ else null end as link, comments
 from library_plate where true 
 $?LIBNAME{{ and library = $LIBNAME }}
 and barcode not in (select barcode from barcode_deletion)', NULL);
+INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, column_head, query_body, query_url) VALUES (70, 'Show water samples', 'Type-specific Reports', 'Shows details for water samples', false, NULL, 'Barcode;<linknoterms;Notes;Location;<linknoterms', 'select to_char(g.barcode, ''FM00-000000'')
+,''query_barcodes.cgi?bc='' || to_char(g.barcode, ''FM00-000000'') as link
+,g.comments
+,g.site_latitude || '', '' || g.site_longitude
+,''http://maps.google.co.uk/maps?f=q&q='' || g.site_latitude || '','' || g.site_longitude
+,storage_location
+,creation_date
+,storage_date
+,created_by 
+,d.datestamp as disposed
+from water_sample g
+left outer join barcode_deletion d on g.barcode = d.barcode
+where true
+$?FROMCODE{{ and
+  $?TOCODE{{ g.barcode >= replace($FROMCODE, ''-'','''')::int8 
+  and g.barcode <= replace($TOCODE, ''-'','''')::int8 }}
+  $!TOCODE{{ g.barcode = replace($FROMCODE, ''-'','''')::int8 }}
+}}
+$?FROMDATE{{ and
+  $?TODATE{{ g.creation_date >= $FROMDATE::date 
+  and g.creation_date <= $TODATE::date }}
+  $!TODATE{{ g.creation_date = $FROMDATE::date }}
+}}', NULL);
 
 
 --
@@ -1132,31 +1280,35 @@ SET search_path = genquery, pg_catalog;
 -- Name: query_param; Type: TABLE DATA; Schema: genquery; Owner: postgres
 --
 
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 20, 'DROPDOWN', 'INST', 'Institute', 'select distinct institute from barcode_user order by institute');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 40, 'TEXT', 'CODE', 'A barcode within block', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 50, 'YESNO', 'MRF', 'Most recent first', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (10, 20, 'DROPDOWN', 'REALNAME', 'Real Name', 'select realname from barcode_user');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (10, 30, 'DROPDOWN', 'INST', 'Institute', 'select distinct institute from barcode_user');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 10, 'DROPDOWN', 'USER', 'Owner Real Name', 'select realname from barcode_user order by realname;');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (15, 2, 'YESNO', 'SHOWDISABLED', 'Include disabled/hidden types?', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (10, 40, 'YESNO', 'ONLYBARCODES', 'Only show users with barcodes?', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (40, 10, 'TEXT', 'FROMCODE', 'Lowest code', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (40, 20, 'TEXT', 'TOCODE', 'Highest code', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 30, 'MULTI', 'TYPE', 'Item type', 'select distinct replace(typename, ''_'', '' '') as tn from barcode_allocation');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (20, 5, 'DROPDOWN', 'USERNAME', 'Owner Username', 'select username from barcode_user order by username;');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (10, 10, 'DROPDOWN', 'USERNAME', 'User Name', 'select username from barcode_user order by username');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (50, 10, 'TEXT', 'BASECODE', 'Base code', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (40, 30, 'DATE', 'FROMDATE', 'From date', '');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (40, 40, 'DATE', 'TODATE', 'To date', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (15, 1, 'DROPDOWN', 'TYPENAME', 'Show only type', 'select replace(tablename::varchar, ''_'', '' '') as name from pg_tables 
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 20, 'DROPDOWN', 'INST', 'Institute', 'select distinct institute from barcode_user order by institute', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 40, 'TEXT', 'CODE', 'A barcode within block', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 50, 'YESNO', 'MRF', 'Most recent first', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (10, 20, 'DROPDOWN', 'REALNAME', 'Real Name', 'select realname from barcode_user', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (10, 30, 'DROPDOWN', 'INST', 'Institute', 'select distinct institute from barcode_user', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 10, 'DROPDOWN', 'USER', 'Owner Real Name', 'select realname from barcode_user order by realname;', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (15, 2, 'YESNO', 'SHOWDISABLED', 'Include disabled/hidden types?', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (10, 40, 'YESNO', 'ONLYBARCODES', 'Only show users with barcodes?', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (40, 10, 'TEXT', 'FROMCODE', 'Lowest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (40, 20, 'TEXT', 'TOCODE', 'Highest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 30, 'MULTI', 'TYPE', 'Item type', 'select distinct replace(typename, ''_'', '' '') as tn from barcode_allocation', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (20, 5, 'DROPDOWN', 'USERNAME', 'Owner Username', 'select username from barcode_user order by username;', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (10, 10, 'DROPDOWN', 'USERNAME', 'User Name', 'select username from barcode_user order by username', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (50, 10, 'TEXT', 'BASECODE', 'Base code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (40, 30, 'DATE', 'FROMDATE', 'From date', '', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (40, 40, 'DATE', 'TODATE', 'To date', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (15, 1, 'DROPDOWN', 'TYPENAME', 'Show only type', 'select replace(tablename::varchar, ''_'', '' '') as name from pg_tables 
 where schemaname::varchar = ''handlebar_data''
-order by name');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (150, 1, 'HUGETEXT', NULL, 'SQL Query', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (60, 1, 'DROPDOWN', 'LIBNAME', 'Library name', 'select distinct library from library_plate');
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (45, 10, 'TEXT', 'FROMCODE', 'Lowest code', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (45, 20, 'TEXT', 'TOCODE', 'Highest code', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (45, 30, 'DATE', 'FROMDATE', 'From date', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (45, 40, 'DATE', 'TODATE', 'To date', NULL);
-INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query) VALUES (45, 1, 'DROPDOWN', 'BCTYPE', 'Type to view', 'select distinct typename as tn from barcode_allocation where typename != ''generic''');
+order by name', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (150, 1, 'HUGETEXT', NULL, 'SQL Query', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (70, 10, 'TEXT', 'FROMCODE', 'Lowest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (70, 20, 'TEXT', 'TOCODE', 'Highest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (60, 1, 'DROPDOWN', 'LIBNAME', 'Library name', 'select distinct library from library_plate', NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (70, 30, 'DATE', 'FROMDATE', 'From date', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (45, 10, 'TEXT', 'FROMCODE', 'Lowest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (45, 20, 'TEXT', 'TOCODE', 'Highest code', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (45, 30, 'DATE', 'FROMDATE', 'From date', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (45, 40, 'DATE', 'TODATE', 'To date', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (70, 40, 'DATE', 'TODATE', 'To date', NULL, NULL);
+INSERT INTO query_param (query_id, param_no, param_type, param_name, param_text, menu_query, suppress_all) VALUES (45, 1, 'DROPDOWN', 'BCTYPE', 'Type to view', 'select distinct typename as tn from barcode_allocation where typename != ''generic''', NULL);
 
 

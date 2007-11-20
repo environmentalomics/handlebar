@@ -12,6 +12,26 @@ use barcodeUtil('-connect');
 use TableIO;
 #use Encode;
 
+# Detect mod_perl
+our $apache = shift if($_[0] =~ /Apache/);
+if($apache)
+{
+    die "This code is too crufty to run under mod_perl, and is not going to do so " .
+	    "without a MAJOR cleanup!\n ";
+}
+#Basically, the -connect junk in barcodeUtil needs to be ripped out so that:
+# - The module is initialised once
+# - The configuration is read and reset on each run
+# - The CGI object is generated once on each run
+# (if several Handlebars are running, the module may be using a different config each time,
+#  so a full flush is best!)
+# - The database connections are properly cached (or re-made every time)
+#My cruft about connecting in the BEGIN stage will no longer wash. 
+
+# I also need to use something like CGI::Application and have a single stub script to dispatch
+# calls to the right run modes.  This would allow me to run several instances on one server without
+# a load of messy symlinks (GenQuery does this properly!)
+
 # No need to load CGI::Carp - barcodeUtil does this for you!
 #  use CGI::Carp qw(fatalsToBrowser);
 
@@ -29,7 +49,7 @@ our $ENABLE_PRINTING = $barcodeUtil::ENABLE_PRINTING;
 our $PAGE_MAINTAINER = $CONFIG{PAGE_MAINTAINER};
 
 #A CGI query object
-my $q = bcgetqueryobj();
+our $q = bcgetqueryobj();
 
 #Trap if I manage to get stuck in some error loop
 #due to my crazy error handling.
@@ -42,14 +62,14 @@ use IO::String;
   sub str{${shift()->string_ref }} }
 
 #Get params
-my $username = $q->param("username");
-my $bctype = $q->param("bctype");
-my $bcquantity = bcdequote($q->param("bcquantity")); 
-my $bccomments = $q->param("bccomments");
-my $bcreqrange = bcdequote($q->param("bcreqrange")); 
-my $impfile = $q->param("impfile");
-my $displist = $q->param("displist");
-my $dispcomments = $q->param("dispcomments");
+our $username = $q->param("username");
+our $bctype = $q->param("bctype");
+our $bcquantity = bcdequote($q->param("bcquantity")); 
+our $bccomments = $q->param("bccomments");
+our $bcreqrange = bcdequote($q->param("bcreqrange")); 
+our $impfile = $q->param("impfile");
+our $displist = $q->param("displist");
+our $dispcomments = $q->param("dispcomments");
 
 #Set auto-newline so the HTML source is legible
 $\ = "\n";
@@ -108,14 +128,14 @@ MAIN: for(1){
 	my $typeslist;
 	if(my $tl = $q->param("tl"))
 	{
-	    $typeslist = [split(",", $tl)];
+		$typeslist = [split(",", $tl)];
 	}
-    
+	
 	print $q->start_html( -style=>{src=>$STYLESHEET}, -title=>"Info" ),
-	      $q->div( {-id=>"typereport"},
+		  $q->div( {-id=>"typereport"},
 		$q->h3("Types of barcode available") .
 		bctypereport($typeslist)
-	      );
+		  );
 	last MAIN;
     }
 
@@ -123,8 +143,8 @@ MAIN: for(1){
     {
 	print $q->start_html( -style=>{src=>$STYLESHEET}, -title=>"Info" ),
 	      $q->div( {-id=>"userreport"},
-		$q->h3("Registered users of the barcode system") .
-		bcuserreport()
+		    $q->h3("Registered users of the barcode system") .
+		    bcuserreport()
 	      );
 	last MAIN;
     }
@@ -286,10 +306,10 @@ MAIN: for(1){
 	    #If strict user checking is in force, check now.
 	    if($STRICT_USER_NAMES)
 	    {
-		my $idxq = bcquote($_);
-		$username or $error = "You need to give a username to upload data.", last MAIN;
+		 my $idxq = bcquote($_);
+		 $username or $error = "You need to give a username to upload data.", last MAIN;
 
-		$username eq $owner or $error =
+		 $username eq $owner or $error =
 		    "You are trying to modify code $idxq but it belongs to $owner and you gave the username $username.",
 		    last MAIN;
 	    }
@@ -331,6 +351,12 @@ MAIN: for(1){
 	    $empties = importrecords($impreader, $bcfound, $type, $deletedhash, \%disposedhash); 
 	    #The number of new rows will be $tcount - $empties - $disposedcount - scalar(keys(%$deletedhash)) 
 	    $addedrows = $tcount - $empties - $disposedcount - scalar(keys(%$deletedhash));
+
+	    #Now is a good time to update the link index
+	    #This is the only point I should need to worry about indexing as it is the only time the data
+	    #tables get updated.
+	    require barcodeIndexer;
+	    barcodeIndexer::indexcodes(@numbers);
 	};
 	if($@)
 	{
@@ -570,12 +596,14 @@ my $ios = new IO::String;
     my $newtypelink = "Register new type - " . $q->a({ -href => "#note1" }, "see notes");
     my $typeslist = [bczapunderscores( @{bcgetbctypes({showhidden=>0})} )];
     my $typeslink = $q->a({-href => "javascript:;",
-                           -onClick => "window.open(
-					'$myurl?typespopup=1#' + 
+                           -onClick => 
+			"window.open(
+				'$myurl?typespopup=1#' + 
 					zapspaces(
 					  reqform.bctype[reqform.bctype.selectedIndex].value
-					), 'Info',
-					'width=800,height=600,resizable=yes,scrollbars=yes');" },
+					), 
+				'Info',
+				'width=800,height=600,resizable=yes,scrollbars=yes');" },
 			  "Describe type" );
 
     print $ios
@@ -603,7 +631,6 @@ my $ios = new IO::String;
     print $ios '<script type="text/javascript">',
 	       bczapspaces_js(),
 	       '</script>';
-
 
 $ios->str;
 }
@@ -784,33 +811,33 @@ sub displist_normalise
     my @res;
 
     for($list) {
-    #Knock out all the hyphens
-    tr/-//d;
+		#Knock out all the hyphens
+		tr/-//d;
 
-    #Then make sure that every character which is not a colon or a digit is converted to a space.
-    #And remove duplicate whitespace.
-    tr/:0-9/ /cs;
-    
-    #Now collapse any spaces which are not bounded by digits
-    s/ :/:/g;s/: /:/g;
+		#Then make sure that every character which is not a colon or a digit is converted to a space.
+		#And remove duplicate whitespace.
+		tr/:0-9/ /cs;
+		
+		#Now collapse any spaces which are not bounded by digits
+		s/ :/:/g;s/: /:/g;
     }
 
     #Right-ho
     for(split / /, $list)
     {
-	if(/^\d+$/) { push(@res, $_) }
-        elsif(/^(\d+):(\d+)$/)
-	{
-	    if(abs($2 - $1) > 10000) { die "Range $_ is larger than the maximum number of codes allowed  
-					    for disposal in one go.  Aborting.\n" };
-	    if($2 - $1 < 0) { push(@res, $2..$1) }
-	    else            { push(@res, $1..$2) }
-	}
-	else
-	{
-	    #This catches something like 30:40:50
-	    die "Range $_ is not a valid range of codes.\n";
-	}
+		if(/^\d+$/) { push(@res, $_) }
+			elsif(/^(\d+):(\d+)$/)
+		{
+			if(abs($2 - $1) > 10000) { die "Range $_ is larger than the maximum number of codes allowed  
+							for disposal in one go.  Aborting.\n" };
+			if($2 < $1) { push(@res, $2..$1) }
+			else        { push(@res, $1..$2) }
+		}
+		else
+		{
+			#This catches something like 30:40:50
+			die "Range $_ is not a valid range of codes.\n";
+		}
     }
 
     return @res;
@@ -850,15 +877,19 @@ sub importrecords
     #First off, must make sure that all the column names are valid SQL identifiers, and detect
     #any empty columns.
     #Then later if there is a header mismatch it will be caught by the database
+    #Note - I'd originally assumed that the sheet would be rectangular, but it seems not - ie.
+    #we may see longer rows (but not shorter??) further down.  Fortunately these are caught later
+    #because the database sees extra bind values.  Leave in the check here as it is still applicable
+    #to CSV.
     {local $Data::Dumper::Terse = 1;
     $headings = [map {tr/ /_/; s/\W//g; $_ || 
-		               die "Invalid or blank column heading in first row of input file. " .
-			           "This normally means that data has been inserted into a cell " .
-				   "to the right of the last column which causes the sheet to expand and " .
-				   "empty (undefined) headings to appear at the end. " .
-				   "If this was the case please delete the whole final column and retry.\n" .
-				   "Headings found were: \n" .
-				   Dumper($headings)
+			   die "Invalid or blank column heading in first row of input file. " .
+			       "This normally means that data has been inserted into a cell " .
+			       "to the right of the last column which causes the sheet to expand and " .
+			       "empty (undefined) headings to appear at the end. " .
+			       "If this was the case please delete the whole final column and retry.\n" .
+			       "Headings found were: \n" .
+			       Dumper($headings)
 		     } @$headings];
     }
 
@@ -903,7 +934,7 @@ sub importrecords
 	#Skip over anything in the disposed hash
 	if($disposedhash->{$thisbarcode}) { next; }
 
-	#Skip blank rows which are not in the deleted hash, ie there was no data
+	#Skip blank rows which are not in the deleted hash, ie. there was no data
 	#for them anyway, else abort because the data has been removed.
 	if($fieldsfound == 1)
 	{
@@ -928,7 +959,13 @@ sub importrecords
 
 	#Finally, de-quote any barcode fields before they go in
 	$row[$_] = bcdequote($row[$_]) for @colswithbarcodes;
-	
+
+	#Finally finally, trim off any undefined values if the row is too long
+	while(@row > @$headings && !defined($row[-1]))
+	{
+	    pop @row;
+	}
+
 	eval{
 	    $inserth->execute(@row);
 	};
@@ -967,9 +1004,11 @@ sub importrecords
 	    my $report = "The message from the server was:
 			  $err\n 
 			  The line in question was:";
-	    for(my $nn = 0; $nn < @$headings; $nn++)
+	    for(my $nn = 0; $nn < @$headings || $nn < @rowcopy ; $nn++)
 	    {
-		$report .= $q->escapeHTML("\n$headings->[$nn] = $rowcopy[$nn]");
+		my $hlabel = $headings->[$nn] || "!_extra_column_" . ($nn+1);
+		$report .= $q->escapeHTML("\n$hlabel = ") .
+			( defined $rowcopy[$nn] ? $q->escapeHTML($rowcopy[$nn]) : $q->i('NULL') );
 	    }
 
 	    #Re-throw the error
@@ -983,13 +1022,21 @@ sub importrecords
 	    {
 		#Also for duplicate rows, which will not be caught by the code checker
 		#since it seems superfluous to do so but will end up here, assuming you added a unique
-		#index to the table for the barcode column.
-		die "There is a duplicate entry in the uploaded file.
+		#index to the table for the barcode column - which you should!
+		die "There is a duplicate entry - ie. two lines with the same barcode - in the uploaded file.
 		     \n$report\n";
+	    }
+	    elsif($err =~ /called with \d+ bind variables when \d+ are needed/)
+	    {
+		#For rows which have data beyond the end of the row.
+		die "A record contains extra data beyond the last \"$headings->[-1]\" column in the ",
+		    "spreadsheet.  If this information is to be recorded, you should put it into the ",
+		    "appropriate column.  Otherwise, delete the column(s) and resubmit.
+		    \n$report\n";
 	    }
 	    else
 	    {
-		die "A data validation error occurred.  A line in your uploaded file does not validate against the ",
+		die "A data validation error occurred.  A record in your uploaded file does not validate against the ",
 		    "type definition for " .bczapunderscores($type). ".
 		     \n$report\n";
 	    }
