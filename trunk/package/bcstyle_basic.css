@@ -23,6 +23,7 @@ table.neat1 td {
 	border-style: ridge ridge ridge ridge;
 	border-color: gray gray gray gray;
 	font-size : smaller;
+        vertical-align: top;
 }
 
 table.formtable {

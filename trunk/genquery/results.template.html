@@ -127,6 +127,10 @@
     <h2>Results of <TMPL_VAR NAME="QUERY_TITLE"></h2>
     
     <div style="padding:5px"><i>Records returned: <TMPL_VAR NAME="ROWS_RETURNED"></i></div>
+
+   <TMPL_IF NAME="LINKOUT_TARGET">
+       <form method="POST" action='<TMPL_VAR NAME="LINKOUT_TARGET">'>
+   </TMPL_IF>
     
     <!-- Set table styles by CSS references to htable -->
     <TMPL_IF NAME="ROWS_RETURNED">
@@ -139,6 +143,12 @@
 	    </TMPL_LOOP>
 	</table>
     </TMPL_IF>
+
+    <TMPL_IF NAME="LINKOUT_TARGET">
+    <p><TMPL_VAR NAME="LINKOUT_SUBMIT"></p>
+        </form>
+    </TMPL_IF>
+
 
     <p><b><a href='<TMPL_VAR NAME="PERMALINK">'>Permalink for this query</a></b></p>
     <p><b><a href='<TMPL_VAR NAME="DOWNLOADLINK">'>Download as CSV</a></b></p>

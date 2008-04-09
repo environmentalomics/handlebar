@@ -696,3 +696,48 @@ be childcode+columnname.
 * Modify admin_barcodes to have a re-index button.
 
 But first, modify admin_barcodes to log all actions.
+
+On 30/1/08:
+
+Had a report from Phil James that he was uploading data and it was vanishing.  Turns out the CEH Oxford database
+has no index table.  The system should ignore this and silently continue.  Instead the attempt to access the table within
+the transaction causes the update to abort, but the error is ignored and the updates just vanish.  The correct logic, now
+implemented, is that the system should commit the updates and then worry about the indexing.  The desired behaviour should
+now be in force.
+
+On 26/3:
+
+Back to the collections again.  Maybe worth thinking what I was doing with the prefixes.  The collection will be identified by a unique ID so the prefix is in that sense redundant, but it seems neat that if the prefix is changed all the old collections keep the same name.  Also a meta-query could peek in each database to see what prefixes were found in each and cache this data, then given a collection ID could find the collection without scanning all the databases.  It also allows you to partition collections by prefix, though each is still given a unique ID in the database.
+
+OK, that makes sense.  On with the show.
+
+On 7/4:
+
+My re-ordering algorithm above works if there are codes with the same index or gaps in the index.  Given that codes
+are always added via bcappendtocollection() and that this preserves neat indexing, maybe it is sensiblke to assume and
+ensure that the index is neat at all times - ie. if there ar 10 items in the list they will be indexed 1 to 10.  Then the
+re-ordering algorithm becomes:
+
+Add a code or codes - add with max(rank) + 1
+Shift to end - set code to max(rank) + 1, decrement all ranks > code
+Shift to start - set rank = 0, increment all ranks < code
+Shift up 1 - shift down one on next element
+Shift down one - verify the code is not already first, decrement, increment previous
+
+This is about the same difficulty as the previous version, but keeps everything neat and tidy.  Note that
+you can't force uniqueness within the database as PG won't let you do the bulk increment/decrement.  If that
+was really wanted I could put in a loop.
+
+So for the JS thing I could either do the re-ordering and send the whole new list of numbers to the server or I could send a list
+of changes to be made.  The latter involves mirroring the ordering code in JS and CGI, but I need to do that anyway for the non-JS version.
+More seriously, if the request is submitted twice the results become garbled, so let's just send the whole list.
+
+Hmmm - The re-ordering in the browser can simply be done by keeping table order.  I only need to worry about re-ordering when I submit the changes,
+and if I just re-write the list then I don't need the shifting code at all.
+
+On 9/4:
+
+After those ramblings, just a note that I was having trouble with SVN login, which I solved by changing my password on the website thus forcing
+it to re-sync it with the SVN server.
+
+

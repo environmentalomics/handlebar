@@ -40,10 +40,10 @@ pg_dump -R -dD --data-only -t barcode_description test_barcode \
     | sed -e 's/tbooth/postgres/' \
     >> $OUTFILE
 
-pg_dump -R -dD --data-only -t query_def test_barcode \
+pg_dump -R -dD --data-only -t genquery.query_def test_barcode \
     | sed -e 's/tbooth/postgres/' \
     >> $OUTFILE
-pg_dump -R -dD --data-only -t query_param test_barcode \
+pg_dump -R -dD --data-only -t genquery.query_param test_barcode \
     | sed -e 's/tbooth/postgres/' \
     >> $OUTFILE
 

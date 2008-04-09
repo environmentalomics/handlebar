@@ -13,7 +13,7 @@ use TableIO;
 #use Encode;
 
 # Detect mod_perl
-our $apache = shift if($_[0] =~ /Apache/);
+our $apache =  (%{Apache::Registry::} || %{ModPerl::Registry::}) ? 1 : 0;
 if($apache)
 {
     die "This code is too crufty to run under mod_perl, and is not going to do so " .
@@ -128,14 +128,14 @@ MAIN: for(1){
 	my $typeslist;
 	if(my $tl = $q->param("tl"))
 	{
-		$typeslist = [split(",", $tl)];
+	    $typeslist = [split(",", $tl)];
 	}
 	
 	print $q->start_html( -style=>{src=>$STYLESHEET}, -title=>"Info" ),
-		  $q->div( {-id=>"typereport"},
-		$q->h3("Types of barcode available") .
-		bctypereport($typeslist)
-		  );
+	      $q->div( {-id=>"typereport"},
+		    $q->h3("Types of barcode available") .
+		    bctypereport($typeslist)
+	      );
 	last MAIN;
     }
 
@@ -351,12 +351,6 @@ MAIN: for(1){
 	    $empties = importrecords($impreader, $bcfound, $type, $deletedhash, \%disposedhash); 
 	    #The number of new rows will be $tcount - $empties - $disposedcount - scalar(keys(%$deletedhash)) 
 	    $addedrows = $tcount - $empties - $disposedcount - scalar(keys(%$deletedhash));
-
-	    #Now is a good time to update the link index
-	    #This is the only point I should need to worry about indexing as it is the only time the data
-	    #tables get updated.
-	    require barcodeIndexer;
-	    barcodeIndexer::indexcodes(@numbers);
 	};
 	if($@)
 	{
@@ -369,6 +363,18 @@ MAIN: for(1){
 	
 	#Commit
 	bccommit();
+
+	#Now is a good time to update the link index
+	#This is the only point I should need to worry about indexing as it is the only time the data
+	#tables get updated.
+	eval{
+	    no warnings qw(once);
+	    require barcodeIndexer;
+	    $barcodeIndexer::IGNORE_ERRORS = 0;
+	    barcodeIndexer::indexcodes(@numbers);
+
+	    bccommit();
+	} or bcrollback(); #If that fails, never mind.  The index is not crucial.
 
 	#Were there empties, disposed, etc?  Report!
 	print $q->start_p;

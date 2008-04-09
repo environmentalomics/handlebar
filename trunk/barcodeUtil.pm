@@ -60,30 +60,30 @@ BEGIN { if($ENV{GATEWAY_INTERFACE}){
     #date?  Nope!
     
     my $carper = sub{
-	    my $err = shift(); 
+	my $err = shift(); 
 
-	    #Have to tread very carefully to avoid messing up Config::Simple.  Try to
-	    #find the correct e-mail address in the config file.
-	    our $conf;
-	    unless($conf)
-	    {
-		    eval{
-		    Config::Simple->import_from('barcodes.conf', $conf);
-		    };
-		    $conf = {} if $@;
-	    }
-	    my $contact = $conf->{PAGE_MAINTAINER} || "the website maintainer";
-	    
-	    print "
-	    <h1>Software error:</h1>
-	    Sorry.  There was an error processing your request.  There is either a bug in the 
-	    code running on the website or something has been misconfigured.  Please help
-	    to debug the system by reporting the problem.  Save this entire page and mail it to 
-	    $contact.
-	    <p>Time: ", scalar(gmtime), " UTC.</p>
-	    <p>Error message: <pre>", $err, "</pre></p>
-	    <p>Param dump: <pre>",
-	    escapeHTML(Dumper({$q->Vars()})), "</pre>";
+	#Have to tread very carefully to avoid messing up Config::Simple.  Try to
+	#find the correct e-mail address in the config file.
+	our $conf;
+	unless($conf)
+	{
+		eval{
+		Config::Simple->import_from('barcodes.conf', $conf);
+		};
+		$conf = {} if $@;
+	}
+	my $contact = $conf->{PAGE_MAINTAINER} || "the website maintainer";
+	
+	print "
+	<h1>Software error:</h1>
+	Sorry.  There was an error processing your request.  There is either a bug in the 
+	code running on the website or something has been misconfigured.  Please help
+	to debug the system by reporting the problem.  Save this entire page and mail it to 
+	$contact.
+	<p>Time: ", scalar(gmtime), " UTC.</p>
+	<p>Error message: <pre>", $err, "</pre></p>
+	<p>Param dump: <pre>",
+	escapeHTML(Dumper({$q->Vars()})), "</pre>";
     };		    
     CGI::Carp::set_message($carper);
 } };
@@ -113,7 +113,7 @@ sub _setup
 	#Compensate for broken Config::Simple
 	for(keys %$conf)
 	{
-		undef($conf->{$_}) if (ref($conf->{$_}) eq 'ARRAY' && @{$conf->{$_}} == 0 );
+	    undef($conf->{$_}) if (ref($conf->{$_}) eq 'ARRAY' && @{$conf->{$_}} == 0 );
 	}
 
 	$MAX_CODES = $conf->{MAX_CODES} || 1000;
@@ -136,7 +136,7 @@ sub _setup
 
 #Rather than attempt to prise out all the database interaction into
 #yet another layer, for now this module will mostly access the database handle directly.
-my ($dbobj, $dbh);
+our ($dbobj, $dbh);
 
 sub connectnow
 {
@@ -250,7 +250,7 @@ sub bclogevent
 
 sub import
 {
-    _setup();
+     _setup();
 
     #Connect to DB if -connect argument given.
     my @args;
@@ -344,58 +344,67 @@ sub bcnavbanner
 {
 my $ios = new IO::String;
     #Show the various components.  Mark out the current page.
+
+    #If the user name is known, pass it along
+    my $userbit = $q->param('username') ? ('?username=' . $q->param('username')) : '';
+
     my @sections = (
-	    { href=>"request_barcodes.cgi", label=>"Main request interface page" },
-	    { href=>"query_barcodes.cgi",   label=>"Quick query" },
+	{ href=>"request_barcodes.cgi$userbit", label=>"Request and upload" },
     );
 
     #If GenQuery is running then we want to link straight to the report interface.
     if($ENABLE_REPORTS)
     {
-	push @sections, { href=>"report_barcodes.cgi", label=>"Report maker" };
+	#Reports also enables collections (for now) #TODO - sort that out
+	push @sections, { href=>"collect_barcodes.cgi$userbit", label=>"Collections" };
+	push @sections, { href=>"report_barcodes.cgi$userbit", label=>"Report and query" };
+    }
+    else
+    {
+	push @sections, { href=>"query_barcodes.cgi$userbit", label=>"Quick query" },
     }
 
     #Printing is offered by default but can be suppressed
     if($ENABLE_PRINTING)
     {
-		push @sections, { href=>"print_barcodes.cgi",   label=>"Barcode printing" };
+	push @sections, { href=>"print_barcodes.cgi$userbit",   label=>"Barcode printing" };
     }
 
     #Admin is offered by default but can be suppressed
     if($ENABLE_ADMIN)
     {
-        push @sections, { href=>"admin_barcodes.cgi",   label=>"Extra admin" };
+        push @sections, { href=>"admin_barcodes.cgi$userbit",   label=>"Extra admin" };
     }
 	
     if($HELP_LINK)
     {
-		push @sections, { href=>$HELP_LINK, label=>"Help", target=>"_blank" };
+	push @sections, { href=>$HELP_LINK, label=>"Help", target=>"_blank" };
     }
 
     #See what page we are on, only if there were no params:
     unless($q->param())
     {
-		my $url = $q->url(-relative=>1);
-		
-		for(@sections)
-		{
-			$_->{current} = 1 if ($_->{href} eq $url);
-		}
+	my $url = $q->url(-relative=>1);
+	
+	for(@sections)
+	{
+	    $_->{current} = 1 if ($_->{href} eq $url);
+	}
     }
     
     my $nbsp = sub{
-		(my $foo = "@_") =~ s/ /&nbsp;/g;
-		$foo;
+	(my $foo = "@_") =~ s/ /&nbsp;/g;
+	$foo;
     };
 
     unless($divs_open)
     {	
-		$divs_open++;
-		print $ios $q->start_div({-id=>"topbanner"});
+	$divs_open++;
+	print $ios $q->start_div({-id=>"topbanner"});
     }
     print $ios	
       $q->div( {-class=>'navbanner_outer'},
-		  $q->span( {-id=>'navbanner', -class=>'navbanner'},
+        $q->span( {-id=>'navbanner', -class=>'navbanner'},
 	  "Main menu:", join("  ", map { $q->span(
 					    $_->{current} ?
 					      { -class=>"navbanner_current" } : (),
@@ -403,7 +412,7 @@ my $ios = new IO::String;
 						   $nbsp->($_->{label})))
 					 } @sections
 			    )
-			  )
+		)
       );
 $ios->str;
 }
@@ -510,59 +519,59 @@ sub bcdescribetype
 
     my $printrowsub = sub
     {
-		my $row = shift;
-		my $flags = shift;
-		#So $row now references a hash of properties for
-		#the table column in question
-		
-		#First skip the 'barcode' field
-		return if $row->{COLUMN_NAME} eq 'barcode';
+	my $row = shift;
+	my $flags = shift;
+	#So $row now references a hash of properties for
+	#the table column in question
+	
+	#First skip the 'barcode' field
+	return if $row->{COLUMN_NAME} eq 'barcode';
 
-		#Remove unsightly underscores
-		$row->{COLUMN_NAME} = bczapunderscores($row->{COLUMN_NAME});
+	#Remove unsightly underscores
+	$row->{COLUMN_NAME} = bczapunderscores($row->{COLUMN_NAME});
 
-		if($flags->{bc})
-		{
-			#This is a barcode, then
-			$row->{TYPE_NAME} = 'barcode';
-			$row->{COLUMN_SIZE} = '';
-		}
-		else
-		{
-			#Make the types more legible
-			($row->{TYPE_NAME}, $row->{COLUMN_SIZE}) =
-			bcsqltypedemystify($row->{TYPE_NAME}, $row->{COLUMN_SIZE});
-		}
+	if($flags->{bc})
+	{
+		#This is a barcode, then
+		$row->{TYPE_NAME} = 'barcode';
+		$row->{COLUMN_SIZE} = '';
+	}
+	else
+	{
+		#Make the types more legible
+		($row->{TYPE_NAME}, $row->{COLUMN_SIZE}) =
+		bcsqltypedemystify($row->{TYPE_NAME}, $row->{COLUMN_SIZE});
+	}
 
-		#Anyone for Curry today?
-		my $formatter = sub{@_};
-		if( $flags->{noexport} )
-		{
-			my $of = $formatter;
-	# 	    $formatter = sub{ $q->span({-style => 'text-decoration: line-through;'}, 
-	# 				       $of->(@_)) };
-			#noeport is there to be used for timestamps where the database will auto-fill
-			#the field.  Strikethrough looks wrong for that.
-			$formatter = sub{ my $x = join('',$of->(@_)); $x eq '' ? '' : "($x)" };
-		}
-		if(! $row->{NULLABLE})
-		{
-			my $of = $formatter;
-			$formatter = sub{ $q->b($of->(@_)) };
-		}
-		if( $flags->{bc})
-		{
-			my $of = $formatter;
-			$formatter = sub{ $q->span({-style => 'color: navy;'}, 
-						   $of->(@_)) };
-		}
+	#Anyone for Curry today?
+	my $formatter = sub{@_};
+	if( $flags->{noexport} )
+	{
+	    my $of = $formatter;
+# 	    $formatter = sub{ $q->span({-style => 'text-decoration: line-through;'}, 
+# 				       $of->(@_)) };
+	    #noexport is there to be used for timestamps where the database will auto-fill
+	    #the field.  Strikethrough looks wrong for that.
+	    $formatter = sub{ my $x = join('',$of->(@_)); $x eq '' ? '' : "($x)" };
+	}
+	if(! $row->{NULLABLE})
+	{
+		my $of = $formatter;
+		$formatter = sub{ $q->b($of->(@_)) };
+	}
+	if( $flags->{bc})
+	{
+		my $of = $formatter;
+		$formatter = sub{ $q->span({-style => 'color: navy;'}, 
+					   $of->(@_)) };
+	}
 
-		print $ios $q->Tr(
-			   $q->td( [ map $formatter->($_),
-					($row->{COLUMN_NAME},
-					 $row->{TYPE_NAME},
-					 $row->{COLUMN_SIZE},
-					 $q->escapeHTML($row->{REMARKS})) ] ));	
+	print $ios $q->Tr(
+		   $q->td( [ map $formatter->($_),
+				($row->{COLUMN_NAME},
+				 $row->{TYPE_NAME},
+				 $row->{COLUMN_SIZE},
+				 $q->escapeHTML($row->{REMARKS})) ] ));	
     };
 
     #Now the final complication is that I am supporting the 'demote'
@@ -683,8 +692,8 @@ my $ios = new IO::String;
     if(keys (%$userdata))
     {
 	print $ios 
-		   $q->start_table({-class=>"neat1"}),
-		   $q->Tr( $q->th( ["Username", "Full Name", "E-Mail", "Institute", "Barcodes Owned"]) );
+	       $q->start_table({-class=>"neat1"}),
+	       $q->Tr( $q->th( ["Username", "Full Name", "E-Mail", "Institute", "Barcodes Owned"]) );
 	for(sort keys(%$userdata))
 	{
 	    #Find out how many codes this user owns
@@ -1246,5 +1255,5 @@ sub highest_active_base
 }
 
 }
- 
+
 1;
