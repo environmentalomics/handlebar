@@ -36,6 +36,7 @@ my $main = sub
 	  bch1(($PAGE_DESC ? "$PAGE_DESC - " : "") . "Query the barcode database"),
 	  $q->h2("Enter a barcode to see details"),
 	  $q->start_form(-name=>"queryform", -method=>"GET"),
+	  $q->hidden(-name=>"username"), #See note below
 	  $q->table( {-class=>"formtable"},
 	    $q->Tr($q->td(
 		[$q->textfield("bc"), $q->submit( -value=>"Query" )]
@@ -43,7 +44,10 @@ my $main = sub
 	  ),	
 	  $q->end_form();
 
-    #Now the inpout field should be focussed ready for the user to scan a code
+    #Note - the user name field is just here so that if the user does some admin, then some queries, then
+    #goes back to the admin tab, the username field has been preserved.  It has no relevance to the query.
+
+    #Now the input field should be focussed ready for the user to scan a code
     print "<script type='text/javascript'>
 	   var bcbox = document.queryform.bc;
 	   bcbox.focus();
@@ -95,6 +99,46 @@ sub codetolink
 {
     my $code = bcquote(shift());
     $q->a({-href=>$q->url(-relative=>1)."?bc=$code"}, $code);
+}
+
+sub usertolink
+{
+    return @_ if !$ENABLE_REPORTS;
+    my $user = shift;
+
+    #If the reportmaker is enabled, link to the 'Show Users' query
+    my $link = 'report_barcodes.cgi?queryname=Show+Users;qp_USERNAME='
+             . CGI::escape($user)
+	     . ';rm=results#results';
+
+    $q->a({-href => $link}, $user);
+}
+
+sub typetolink
+{
+    my $type = shift;
+
+    #Use the type summariser, as linked in the Show Item Types report
+    my $link = 'request_barcodes.cgi?typespopup=1#'
+               . CGI::escape($type);
+
+    $q->a({-href => $link}, bczapunderscores($type));
+}
+
+sub blocktolink
+{
+    my ($fromcode, $tocode) = @_;
+    my $label = bcquote($fromcode) ." to  ". bcquote($tocode);
+
+    if(!$ENABLE_REPORTS)
+    {
+	return $label;
+    }
+
+    my $link = "report_barcodes.cgi?queryname=Data+Summary;qp_FROMCODE="
+	     . "$fromcode;qp_TOCODE=$tocode;rm=results#results";
+    
+    $q->a({-href => $link}, $label);
 }
 
 sub runquery
@@ -198,6 +242,7 @@ sub reportoncode
     $sth = bcprepare("
 		SELECT childtype, childcode from barcode_link_index WHERE
 		parentcode = ?
+		ORDER BY childtype, childcode
 		");
     $sth->execute($bc);
     my @childcodes = @{$sth->fetchall_arrayref()};
@@ -215,9 +260,9 @@ sub reportoncode
     print $q->start_table({-class=>"neat1"}),
 	  $q->Tr( $q->td( [ '<b>Barcode</b>' => codetolink($bc) ]) ),
 	  $database_label ? $q->Tr( $q->td( [ '<b>In database</b>' => $database_label ]) ) : "",
-	  $q->Tr( $q->td( [ '<b>Owned by</b>' => $username ]) ),
-	  $q->Tr( $q->td( [ '<b>Type</b>' => bczapunderscores($typename) ]) ),
-	  $q->Tr( $q->td( [ '<b>Part of block</b>' => bcquote($fromcode) ." to  ". bcquote($tocode) ]) ),
+	  $q->Tr( $q->td( [ '<b>Owned by</b>' => usertolink($username) ]) ),
+	  $q->Tr( $q->td( [ '<b>Type</b>' => typetolink($typename) ]) ),
+	  $q->Tr( $q->td( [ '<b>Part of block</b>' => blocktolink($fromcode, $tocode) ]) ),
 	  $q->Tr( $q->td( [ '<b>Allocated on</b>' => $datestamp ]) );
     print $q->Tr( $q->td( [ '<b>Range comment</b>' => $comments ]) ) if $comments;
 
@@ -239,7 +284,10 @@ sub reportoncode
 	    }
 	    elsif($flags->{bc})
 	    {
+		#Try to discover what type of thing the code links to
+		my ( undef, $linked_code_type ) = eval{ bcgetinfofornumber($bcinfo->{$name}) };
 		$val = codetolink($bcinfo->{$name});
+	        $val .= ' (' . bczapunderscores($linked_code_type) . ')' if $linked_code_type;
 	    }
 	    else
 	    {

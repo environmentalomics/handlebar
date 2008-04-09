@@ -24,8 +24,9 @@ use strict;
 use warnings;
 
 #On a system where the table is not in place, I probably just want to silently
-#continue.
-our $IGNORE_ERRORS = 1;
+#continue.  No - this doesn't work!  The bad update aborts the transaction which
+#can stuff up the caller!
+our $IGNORE_ERRORS = 0;
 our $INDEX_TABLE = 'barcode_link_index';
 
 #-- SQL for barcode_link_index

@@ -9,8 +9,8 @@ echo Generating dump file... ; ./makesql.sh
 echo "Building PDF help files in ./doc"
 if [ -x /home/tbooth/perl/ooo2pdf.sh ] ; then
     rm doc/*.pdf
-    /home/tbooth/perl/ooo2pdf.sh doc/user_guide.odt
-    /home/tbooth/perl/ooo2pdf.sh doc/deployer_guide.odt
+    /home/tbooth/perl/ooo2pdf.sh doc/user_guide.odt || exit 1
+    /home/tbooth/perl/ooo2pdf.sh doc/deployer_guide.odt || exit 1 
 fi
 
 #Now go to the fakeroot bit

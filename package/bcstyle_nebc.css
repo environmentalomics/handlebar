@@ -31,6 +31,7 @@ table.neat1 td {
 	border-style: none;
 	background-color: #EEEEEE;
 	font-size : smaller;
+        vertical-align: top;
 }
 
 /* The formtable is used as a means to layout forms and should be borderless */

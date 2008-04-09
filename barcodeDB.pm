@@ -83,7 +83,8 @@ sub dbconnect
 
     if($s->{sysschema})
     {
-	$dbh->do(qq{SET search_path="$s->{sysschema}"});
+	$dbh->do(qq|SET search_path="$s->{sysschema}"|);
+	$dbh->commit();
     }
     $dbh;
 }
