@@ -48,6 +48,7 @@ use IO::String;
 
 #CGI stuff - use CGI::Carp only if called via a browser.
 our ($q, $conf);
+our $noconf = 0;
 BEGIN { if($ENV{GATEWAY_INTERFACE}){
     
     #I previously used "if(http())" to test if the script was actually running under CGI but this
@@ -105,33 +106,52 @@ our( $MAX_CODES, $CODE_BLOCK_SIZE, $MIN_BAR_CODE, $PREFIX_LENGTH, $POSTFIX_LENGT
 
 sub _setup
 {
-	return if $q;  #Only setup once!  Oh dear, this is messy :-(
-	$q = new CGI;
-	$conf = {};
+    return if $q;  #Only setup once!  Oh dear, this is messy :-(
+    $q = new CGI;
+    return if $noconf;
 
-	Config::Simple->import_from('barcodes.conf', $conf);
+    _configure('barcodes.conf');
+}
+
+sub _configure
+{
+    if(ref $_[0])
+    {
+	$conf = shift;
+    }
+    else
+    {
+	$conf = {};
+	my $filename = shift or die "No configuration file specified.\n";
+	Config::Simple->import_from($filename, $conf);
+
+        die "Cannot read configuration file $filename\n" unless (%$conf);
+
 	#Compensate for broken Config::Simple
 	for(keys %$conf)
 	{
 	    undef($conf->{$_}) if (ref($conf->{$_}) eq 'ARRAY' && @{$conf->{$_}} == 0 );
 	}
+    }
 
-	$MAX_CODES = $conf->{MAX_CODES} || 1000;
-	$CODE_BLOCK_SIZE = $conf->{CODE_BLOCK_SIZE} || 100;
-	$MIN_BAR_CODE = bcdequote($conf->{MIN_BAR_CODE});
-	$PREFIX_LENGTH = $conf->{PREFIX_LENGTH} || 0;
-	$POSTFIX_LENGTH = $conf->{POSTFIX_LENGTH} || 0;
-	$SPACER_CHAR = $conf->{SPACER_CHAR} || '';
-	$STYLESHEET = $conf->{STYLESHEET} || 'bcstyle.css';
-	$CUSTOM_FOOTER = $conf->{CUSTOM_FOOTER} || 'barcodes.footer.html';
-	$HELP_LINK = $conf->{HELP_LINK} || '../../handlebar/user_guide.pdf';
-	$ENABLE_PRINTING = $conf->{ENABLE_PRINTING} ? 1 : 0;
-	$ENABLE_ADMIN = $conf->{ENABLE_ADMIN} ? 1 : 0;
-	$ENABLE_REPORTS = $conf->{ENABLE_REPORTS} ? 1 : 0;
-	$STRICT_USER_NAMES = $conf->{STRICT_USER_NAMES} ? 1 : 0;
-	$LOG_DIRECTORY = $conf->{LOG_DIRECTORY};
+    $MAX_CODES = $conf->{MAX_CODES} || 1000;
+    $CODE_BLOCK_SIZE = $conf->{CODE_BLOCK_SIZE} || 100;
+    $MIN_BAR_CODE = bcdequote($conf->{MIN_BAR_CODE});
+    $PREFIX_LENGTH = $conf->{PREFIX_LENGTH} || 0;
+    $POSTFIX_LENGTH = $conf->{POSTFIX_LENGTH} || 0;
+    $SPACER_CHAR = $conf->{SPACER_CHAR} || '';
+    $STYLESHEET = $conf->{STYLESHEET} || 'bcstyle.css';
+    $CUSTOM_FOOTER = $conf->{CUSTOM_FOOTER} || 'barcodes.footer.html';
+    $HELP_LINK = $conf->{HELP_LINK} || '../../handlebar/user_guide.pdf';
+    $ENABLE_PRINTING = $conf->{ENABLE_PRINTING} ? 1 : 0;
+    $ENABLE_ADMIN = $conf->{ENABLE_ADMIN} ? 1 : 0;
+    $ENABLE_REPORTS = $conf->{ENABLE_REPORTS} ? 1 : 0;
+    $STRICT_USER_NAMES = $conf->{STRICT_USER_NAMES} ? 1 : 0;
+    $LOG_DIRECTORY = $conf->{LOG_DIRECTORY};
 
-	$divs_open = 0;
+    $conf->{PAGE_DESC} ||= $conf->{PAGE_DESCRIPTION};
+
+    $divs_open = 0;
 }
 
 #Rather than attempt to prise out all the database interaction into
@@ -250,14 +270,21 @@ sub bclogevent
 
 sub import
 {
-     _setup();
-
-    #Connect to DB if -connect argument given.
+    #I had this module automatically reading the config and opening a Db connection, but for
+    #some uses I want neither of these.
+    my $connectnow = 0;
     my @args;
     for(@_)
     {
-	/-connect/ ? connectnow() : push(@args, $_);
+	/-connect/ and ($connectnow = 1), next;
+	/-noconf/ and ($noconf = 1), next;
+	push(@args, $_);
     }
+
+     _setup();
+
+    #Connect to DB if -connect argument given.
+    connectnow() if $connectnow;
 
     barcodeUtil->export_to_level(1, @args);
 }
@@ -384,11 +411,12 @@ my $ios = new IO::String;
     #See what page we are on, only if there were no params:
     unless($q->param())
     {
-	my $url = $q->url(-relative=>1);
-	
-	for(@sections)
-	{
-	    $_->{current} = 1 if ($_->{href} eq $url);
+	if(my $url = $q->url(-relative=>1))
+	{	    
+	    for(@sections)
+	    {
+		$_->{current} = 1 if ($_->{href} eq $url);
+	    }
 	}
     }
     
@@ -983,7 +1011,7 @@ sub bcdodisposal
 #Convert a type name to a tablename.
 sub bctypetotable
 {
-    "$DATA_SCHEMA." . shift();
+    "$DATA_SCHEMA." . (shift || die "bctypetotable called with blank type name");
 }
 
 sub bcgetbctypes
@@ -1116,7 +1144,8 @@ sub bczapspaces_js
 sub bcdequote
 {
     #This is easy - remove all but digits
-    my $code = shift || return undef;
+    my $code = shift;
+    return undef if (!defined($code) || $code eq '');
     $code =~ s/\D//g;
     #But I also need to remove leading zeros, or my hash-based detection of
     #matches between input and database screws up!
@@ -1146,6 +1175,52 @@ sub bcsqltypedemystify
     $typename = "timestamp" if $typename =~ /timestamp/;
 
     ($typename, $typelength);
+}
+
+#A couple of collection-related routines used by both collect_barcodes.cgi
+#and public_query.cgi.
+sub bcgetcollectioninfo
+{
+    my ($collid) = @_;
+
+    $collid or return undef;
+
+    #$collid can be a nickname or a number
+    #Get the appropriate line from barcode_collection
+    my $info;
+    if($collid =~ /\D/)
+    {
+	$info = $dbh->selectrow_hashref("SELECT *, 
+					 to_char(creation_timestamp, 'FMDDth Mon YYYY, HH24:MI') as creation,
+					 to_char(modification_timestamp, 'FMDDth Mon YYYY, HH24:MI') as modification
+					 FROM barcode_collection WHERE nickname = ?",
+					 undef, $collid);
+    }
+    else
+    {
+	#DEBUG
+# 	die $dbh->selectrow_array("show search_path");
+
+	$info = $dbh->selectrow_hashref("SELECT *,
+					 to_char(creation_timestamp, 'FMDDth Mon YYYY, HH24:MI') as creation,
+					 to_char(modification_timestamp, 'FMDDth Mon YYYY, HH24:MI') as modification
+					 FROM barcode_collection WHERE id = $collid");
+    }
+    $info or return undef;
+
+    #Now determine the print name
+    $info->{print_name} = defined($info->{nickname}) ? $info->{nickname} : "$info->{prefix}.$info->{id}";
+    $info;
+}
+
+sub bcgetcollectionitems
+{
+    my ($collid) = @_;
+
+    $collid = int_nowarn($collid);
+
+    $dbh->selectall_arrayref("SELECT barcode, rank FROM barcode_collection_item WHERE
+			      collection_id = $collid order by rank, barcode");
 }
 
 #Get a summary of codes allocate dby a user.  For the sake of simplicity in the

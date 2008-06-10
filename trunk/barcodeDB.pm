@@ -40,6 +40,16 @@ sub disconnect
     shift()->{dbh}->disconnect();
 }
 
+sub autocommit
+{
+    my $dbh = shift()->{dbh};
+    my $newval = shift;
+
+    my $ac = $dbh->{AutoCommit};
+    $dbh->{AutoCommit} = $newval if defined $newval;
+    $ac;
+}
+
 sub get_handle
 {
     shift()->{dbh};

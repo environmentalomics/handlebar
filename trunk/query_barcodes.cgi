@@ -4,8 +4,6 @@ use strict; use warnings;
 
 # CVS $Revision: 1.9 $ committed on $Date: 2006/09/22 13:21:18 $ by $Author: tbooth $
 
-#Can't connect just yet, as we play silly beggars 
-#for the master-query case.
 use barcodeUtil;
 #use Data::Dumper;
 
@@ -63,14 +61,16 @@ my $main = sub
 	{
 	    print $q->p("You need to enter a valid numeric barcode to search on.");
 	} 
-	elsif($MASTER_SEARCH)
-	{
-	    runquery_master($bc);
-	}
+	#I don't support MASTER_SEARCH here any more - see public_query.cgi for the new version.
+# 	elsif($MASTER_SEARCH)
+# 	{
+# 	    runquery_master($bc);
+# 	}
 	else
 	{
 	    #Connect with DB params found in config
 	    barcodeUtil::connectnow();
+	    bcgetdbobj()->autocommit(1);
 
 	    #Find out highest and lowest barcodes.
 	    $highestbc = bcgethighestbc();
@@ -128,7 +128,7 @@ sub typetolink
 sub blocktolink
 {
     my ($fromcode, $tocode) = @_;
-    my $label = bcquote($fromcode) ." to  ". bcquote($tocode);
+    my $label = bcquote($fromcode) ." : ". bcquote($tocode);
 
     if(!$ENABLE_REPORTS)
     {
@@ -167,6 +167,7 @@ sub runquery
     }
 }
 
+=old_cruft
 sub runquery_master
 {
     #Hmm, complexities.
@@ -209,6 +210,7 @@ sub runquery_master
 	    }
 	}
 	barcodeUtil::connectnow(\%configclone);
+	bcgetdbobj()->autocommit(1);
 	
 	$database_label = $CONFIG{"LABEL_$targetdb"};
 	$highestbc = bcgethighestbc();
@@ -219,6 +221,7 @@ sub runquery_master
 	bcdisconnect();
     }
 }
+=cut
 
 sub reportoncode
 {
@@ -239,13 +242,16 @@ sub reportoncode
     my $bcfields = $sth->{NAME_lc};
 
     #Find anything in the links table
-    $sth = bcprepare("
-		SELECT childtype, childcode from barcode_link_index WHERE
-		parentcode = ?
-		ORDER BY childtype, childcode
-		");
-    $sth->execute($bc);
-    my @childcodes = @{$sth->fetchall_arrayref()};
+    my @childcodes;
+    eval{
+	$sth = bcprepare("
+		    SELECT childtype, childcode from barcode_link_index WHERE
+		    parentcode = ?
+		    ORDER BY childtype, childcode
+		    ");
+	$sth->execute($bc);
+	@childcodes = @{$sth->fetchall_arrayref()};
+    };
 
     #See if this code was disposed, and if so print a warning.
     my ($dispdate, $dispcomments) = bcdisposedateandcomments($bc);

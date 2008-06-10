@@ -714,7 +714,7 @@ OK, that makes sense.  On with the show.
 On 7/4:
 
 My re-ordering algorithm above works if there are codes with the same index or gaps in the index.  Given that codes
-are always added via bcappendtocollection() and that this preserves neat indexing, maybe it is sensiblke to assume and
+are always added via bcappendtocollection() and that this preserves neat indexing, maybe it is sensible to assume and
 ensure that the index is neat at all times - ie. if there ar 10 items in the list they will be indexed 1 to 10.  Then the
 re-ordering algorithm becomes:
 
@@ -739,5 +739,37 @@ On 9/4:
 
 After those ramblings, just a note that I was having trouble with SVN login, which I solved by changing my password on the website thus forcing
 it to re-sync it with the SVN server.
+
+On 16/5:
+
+Returning after hols, I'm now working on the query page for public use.  This will be able to show either a collection or a single code and will
+honour the privacy settigns so only published collections will appear and information for codes will only show up if the code is part of a published collection.
+There is some complex logic for looking to see if a code should be published by virtue of being related to a code in a collection where the publish_ancestors or publish_descendants flag is set.  This is all done by scanning the link index.
+
+Discovered misspelling (descendents with an e) and corrected in the database and the code.
+
+Features for public_query.cgi:
+
+no navigation menus - DONE
+reports in slightly different format - DONE
+determines if code is viewable or not - DONE
+run in standard or master modes (see below)
+use correct stylesheet dependign on code DB
+show collections
+
+Standard/master modes:
+
+Previously I had some nasty system where barcodes.conf would be a special master version with all the login details.
+Better system for my setup would be to have an actual master.conf file with the names of barcodes.conf files to read.
+The public_query script will look for this.  If found it will enter master mode, otherwise it will use the barcodes.conf file as before.
+
+Now what was I thinking of in the collection prefixes?  The script would auto-scan all databases?
+That sounds bad, unless cached.  If cached, where do I store the cache?  Caches are complex.  What was I thinking?
+
+OK, being too clever is just a make-work project.  Instead, in the master conf just have a high code, a low code and a list of
+collection prefixes for each database, then the barcodes.conf file will be picked up.  Update the file manually to publish new databases
+and add new prefixes.
+
+Small fix - in the table view it would be handy to have different colour codes for unused and disposed barcodes.  As long as I don't do this by adding a 'style' attribute to the table cells this should not interfere with my flashing code.
 
 
