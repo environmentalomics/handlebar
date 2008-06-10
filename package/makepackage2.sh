@@ -33,9 +33,10 @@ collectfiles ()
     install -vd -g root -o root $CGIDIR/TableIO
     install -v -g root -o root -m644 ../TableIO/*pm $CGIDIR/TableIO
 
-    echo "Putting barcodes.conf barcodes.footer.html labellogo40.pcx in place"
+    echo "Putting barcodes.conf master.conf.sample barcodes.footer.html labellogo40.pcx in place"
     install -v -g root -o root -m644 barcodes.footer.html labellogos/labellogo40.pcx $CGIDIR
     install -v -g root -o root -m644 ../barcodes.conf.sample $CGIDIR/barcodes.conf
+    install -v -g root -o root -m644 ../master.conf.sample $CGIDIR/master.conf.sample
     echo "Putting alternative label logos in place"
     install -v -g root -o root -m644 labellogos/labellogo40_*.pcx $SHAREDDIR
 
@@ -55,8 +56,8 @@ collectfiles ()
     install -vd -g root -o root $SHAREDDIR/genquery
     install -v -g root -o root -m644 ../genquery/*.tmpl ../genquery/*.html $SHAREDDIR/genquery
 
-    echo "Putting in LICENSE, README, INSTALL"
-    install -v -g root -o root -m644 LICENSE* README* INSTALL* $DOCDIR
+    echo "Putting in LICENSE, README, INSTALL, UPGRADE"
+    install -v -g root -o root -m644 LICENSE* README* INSTALL* UPGRADE* $DOCDIR
 
     install -v -g root -o root -m644 doc/*.pdf $WWWDIR
     install -v -g root -o root -m644 doc/*.odt $DOCDIR

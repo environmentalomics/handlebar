@@ -31,6 +31,13 @@ table.neat1 td {
         vertical-align: top;
 }
 
+table.neat1 tr.unused>td
+{
+    background-color: white;
+    border-style: solid;
+    border-color: #EEEEEE;
+}
+
 /* The formtable is used as a means to layout forms and should be borderless */
 
 table.formtable {

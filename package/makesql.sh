@@ -36,7 +36,7 @@ MSG
 pg_dump -C --schema-only test_barcode \
     | sed -e 's/tbooth/postgres/;s/test_barcode/handlebar/' \
     >> $OUTFILE
-pg_dump -R -dD --data-only -t barcode_description test_barcode \
+pg_dump -R -dD --data-only -t handlebar_sys.barcode_description test_barcode \
     | sed -e 's/tbooth/postgres/' \
     >> $OUTFILE
 

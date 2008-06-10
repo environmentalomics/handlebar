@@ -34,6 +34,7 @@ our $PAGE_MAINTAINER = $CONFIG{PAGE_MAINTAINER};
 our $COLLECTION_PREFIX = $CONFIG{COLLECTION_PREFIX};
 our $PREFIX_LENGTH = $CONFIG{PREFIX_LENGTH};
 our $MIN_BAR_CODE = bcdequote($CONFIG{MIN_BAR_CODE});
+our $PUBLIC_QUERY_URL = $CONFIG{PUBLIC_QUERY_URL};
 
 #A CGI query object
 my $q = bcgetqueryobj();
@@ -71,11 +72,11 @@ print bcheader(),
 #6) Delete collection
 
 #The event dispatcher.  CGI::Application-esque but open coded.
-my $rm = $q->param('rm') || $q->url_param('rm') || undef;
+my $rm = $q->param('rm') || $q->url_param('rm') || 'none';
 $q->delete('rm');
 
 #Special case for deletion
-if($q->param('delete')){ $rm = 'deletecollection' }
+if($q->param('deletebtn')){ $rm = 'deletecollection' }
 
 for(1)
 {
@@ -148,7 +149,7 @@ for(1)
 	else
 	{
 	    bcrollback();
-	    print gen_error($@), show_editor_or_error($q->param('collectionid'));
+	    print gen_error($@), show_editor_or_error($q->param('id'));
 	}
 			      
     last};
@@ -185,15 +186,15 @@ sub prompt_for_query
     my $usertext = ($username ? " for $username" : '');
 
     $q->h2("Enter a collection ID or nickname to see details") .
-    $q->start_form({-action=>'', -name=>"showcollectionform", -method=>"GET", -enctype=>CGI::URL_ENCODED()}) .
+    $q->startform({-action=>'', -name=>"showcollectionform", -method=>"GET", -enctype=>CGI::URL_ENCODED()}) .
     $q->table( {-class=>"formtable"}, $q->Tr($q->td([
-	    $q->textfield("c"),
 	    "<input type='hidden' name='rm' value='edit' />" ,
 	    $q->hidden('username'),
+	    $q->textfield("c"),
 	    $q->submit("Show collection"),
     ]))) .
     $q->end_form() .
-    $q->p("or... " . $q->a({-href=>gq_link($username)}, "List collections$usertext in the report maker"));
+    $q->p("or... " . $q->a({-href=>gq_link($username)}, "<b>List collections$usertext in the report maker</b>"));
 }
 
 sub prompt_small
@@ -202,7 +203,7 @@ sub prompt_small
     my $usertext = ($username ? " for $username" : '');
 
     $q->div( {-name=>'quick_coll_search'},
-	$q->start_form({-action=>'', -name=>"showcollectionform", -method=>"GET", -enctype=>CGI::URL_ENCODED()}) ,
+	$q->startform({-action=>'', -name=>"showcollectionform", -method=>"GET", -enctype=>CGI::URL_ENCODED()}) ,
 	'Search : ', 
 	"<input type='hidden' name='rm' value='edit' />" ,
 	$q->hidden('username') ,
@@ -219,15 +220,18 @@ sub link_to_create
     my $create_link = '?rm=create';
     $q->param(rm => 'prompt_for_create');
 
-    $q->h2("Create a collection") .
-    $q->p("You can create a collection directly from a search report, or you can make one manually by pasting in
-	   a list of codes."),
-    $q->start_form({-name=>"create", -method=>"GET"}) .
-    $q->table( {-class=>"formtable"}, $q->Tr($q->td([
-	    $q->hidden({-name=>'rm'}),
-	    $q->submit("Create a new collection"),
-    ]))) .
-    $q->end_form();
+    $q->h2("Create a collection") ,
+    $q->p("You can create a collection directly from a report, or you can make one manually by pasting in
+	   a list of codes.") ,
+    $q->p($q->a({-href=>"?rm=prompt_for_create"}, "<b>Create a new collection</b>")) ,
+#     $q->startform({-name=>"create", -method=>"GET"}) .
+#     $q->table( {-class=>"formtable"}, $q->Tr($q->td([
+# 	    $q->hidden({-name=>'rm'}),
+# 	    $q->submit("Create a new collection"),
+#     ]))) ,
+#     $q->end_form()
+      ;
+
 }
 
 
@@ -236,6 +240,29 @@ sub link_to_create
 sub prompt_for_create
 {
     $q->param(rm => 'create');
+
+    my @publication = ();
+    if($PUBLIC_QUERY_URL)
+    {	
+	@publication = (
+	  $q->td([
+	    "Publish", $q->checkbox({ -name => "publish_codes", 
+				      -value => '1',
+				      -id => 'pc', 
+				      -onClick => 'pc_clicked()', 
+				      -label => "This collection" }) . " &nbsp;<i>and</i> " .
+		       $q->checkbox({ -name => "publish_ancestors", 
+				      -value => '1',
+				      -id =>'pa', 
+				      -onClick => 'pa_clicked()', 
+				      -label => "All ancestor samples" }) . " &nbsp; " .
+		       $q->checkbox({ -name => "publish_descendants", 
+				      -value => '1',
+				      -id=>'pd', 
+				      -onClick => 'pd_clicked()', 
+				      -label=>"All derived samples"})
+	  ]) );
+    }
 
     $q->h2("Define a new collection of barcodes") .
     $q->start_form({-name=>"makecollectionform", -method=>"POST"}) .
@@ -246,8 +273,10 @@ sub prompt_for_create
 	]),$q->td([
 	    "Nickname for collection", $q->textfield("nickname") 
 	]),$q->td([
-	    "Comments", $q->textarea("comments") 
-	]),$q->td([
+	    "Comments", $q->textarea(-name => "comments", -rows => 4, - columns => 40) 
+	]),
+	@publication,
+	$q->td([
 	    "Codes to add", $q->textarea(-name => "codes", -rows => 8, -columns => 40) 
 	]),$q->td([
 	    '', $q->submit("Create collection") 
@@ -286,6 +315,9 @@ sub create_collection
 	$userdata or die bad_user_error();
 	my $nickname = check_nickname($q->param('nickname'));
 	my $comments = $q->param('comments');
+	my $publish_codes = $q->param('publish_codes');
+	my $publish_ancestors = $q->param('publish_ancestors');
+	my $publish_descendants = $q->param('publish_descendants');
 	my $codes_to_add = $q->param('codes');
 	my $message = $q->h2("Creating a new collection...") . "\n";
 
@@ -299,8 +331,10 @@ sub create_collection
 		    "coll." . substr(bcquote($MIN_BAR_CODE), 0, $PREFIX_LENGTH);
 	$prefix =~ s/\.$//;
 
+	if(!$publish_codes) { $publish_ancestors = $publish_descendants = 0 };
+
 	my $new_collection_id = bccreatecollection($prefix, $userdata->{username}, $nickname,
-						   $comments);
+						   $comments, $publish_codes, $publish_ancestors, $publish_descendants);
 
 	#Super, now add all the codes into it.
 	my $codesadded = bcappendtocollection($new_collection_id, \@codelist);
@@ -312,8 +346,33 @@ sub create_collection
 	}
 
 	$message .= $q->p("A new collection $prefix.$new_collection_id has been created with $codecount items.\n");
+	
+	$message .= $q->p( "The collection will be " . publish_message($publish_codes, $publish_ancestors, $publish_descendants) . ".\n" );
+
 	($new_collection_id, $message);
 }
+
+sub publish_message
+{
+    my ($publish_codes, $publish_ancestors, $publish_descendants) = @_;
+
+    $publish_codes ? (
+	($publish_ancestors && $publish_descendants) ?
+	    "publicly viewable, along with the sample information and the information
+	     on <b>all</b> related samples, including anything linked directly or indirectly to these samples in the future"
+	: $publish_ancestors ?
+	    "publicly viewable, along with the sample information and information
+	     on any linked samples going right back to the original source"
+	: $publish_descendants ?
+	    "publicly viewable, along with the sample information and information
+	     on <b>all</b> samples which link back directly or indirectly to any item in this collection, 
+	     including those added in the future"
+	: #else
+	    "publicly viewable, along with the sample information for the collected codes"
+    ) :
+	#Assume that the other boxes are unchecked - enforced above.
+	"visible only to logged-in users of Handlebar";
+};
 
 # sub add_codes
 # {
@@ -347,20 +406,52 @@ sub show_editor
     }
 
     my $collection_items = bcgetcollectionitems($collection_info->{id});
+    my $codecount = (scalar(@$collection_items) == 1) ? "1 item" : scalar(@$collection_items) . ' items';
 
     #For the fist shot, just list the info.  TODO - add up/down/delete editing function.
     my $res = $q->h2("View and edit collection");
-    $res .= $q->p("Collection <i>$collection_info->{print_name}</i><br />\n");
+    $res .= $q->p("Collection <i>$collection_info->{print_name}</i> ($codecount)<br />\n");
     
     $q->param(rm => 'saveedits');
-    $q->param(id => $collection_info->{id});
-    $q->param(username => $collection_info->{username});
-    $q->param(nickname => $collection_info->{nickname});
-    $q->param(comments => $collection_info->{comments});
+    for(qw(id username nickname comments publish_codes publish_ancestors publish_descendants))
+    {
+	$q->param($_ => $collection_info->{$_});
+    }
     $q->delete('really');
     $q->delete('codes');
 
-    $res .= $q->start_form({-name=>"amendcollection", -method=>"post"}).	
+    my @publication = ();
+    if($PUBLIC_QUERY_URL)
+    {	
+	@publication = (
+	    $q->td([
+		"Publish", $q->checkbox({ -name => "publish_codes", 
+					  -value => '1',
+					  -id => 'pc', 
+					  -onClick => 'pc_clicked()', 
+					  -label => "This collection" }) . " &nbsp;<i>and</i> " .
+			   $q->checkbox({ -name => "publish_ancestors", 
+					  -value => '1',
+					  -id =>'pa', 
+					  -onClick => 'pa_clicked()', 
+					  -label => "All ancestor samples" }) . " &nbsp; " .
+			   $q->checkbox({ -name => "publish_descendants", 
+					  -value => '1',
+					  -id=>'pd', 
+					  -onClick => 'pd_clicked()', 
+					  -label=>"All derived samples"}) .
+			   $q->p( $q->i( "Collection " . 
+			   publish_message(@$collection_info{qw(publish_codes publish_ancestors publish_descendants)})))
+	    ]),
+	    $q->td([ "Public query link", 
+		     $collection_info->{publish_codes} ? 
+			qq*<a href="$PUBLIC_QUERY_URL?bc=$collection_info->{prefix}.$collection_info->{id}">* . 
+			qq*$PUBLIC_QUERY_URL?bc=$collection_info->{prefix}.$collection_info->{id}</a>* :
+			qq*<i>$PUBLIC_QUERY_URL?bc=$collection_info->{prefix}.$collection_info->{id}</i>*])
+	);
+    }
+
+    $res .= $q->start_form({-name=>"amendcollection", -id=>"amendcollection", -method=>"POST"}).
 		$q->hidden({-name=>'rm'}) .
 		$q->hidden({-name=>'id'}) .
 		$q->start_table( {-class=>"neat1"} ) . $q->Tr([
@@ -371,16 +462,18 @@ sub show_editor
 		    ]),$q->td([
 			"Nickname", $q->textfield("nickname") 
 		    ]),$q->td([
-			"Comments", $q->textarea("comments") 
-		    ]),$q->td([
+			"Comments", $q->textarea({-columns=>"40", -rows=>"4", -name=>"comments"}) 
+		    ]),
+		    @publication,	
+		    $q->td([
 			"Created", $q->b( $collection_info->{creation} )
 		    ]),$q->td([
 			"Last Updated", $q->b( $collection_info->{modification} )
 		    ]),$q->td({-style=>'background:none'}, [
-			'', $q->submit("Commit changes") 
+			'', $q->submit({-name=>'commit', -label=>"Commit changes", -onClick=>'submit_hook()'}) 
 		    ]),$q->td({-style=>'background:none'}, [
 			'', $q->checkbox({-name=>'really',-label=>'really',-onClick=>'really_clicked()'}) . 
-			    "&nbsp; " . $q->submit(-name=>'delete', -label=>"Delete collection") 
+			    "&nbsp; " . $q->submit(-name=>'deletebtn', -id=>'deletebtn', -label=>"Delete collection") 
 		]),]);
 
     $res .= $q->start_Tr() . $q->td("Codes") . $q->start_td();
@@ -389,19 +482,50 @@ sub show_editor
     {
 	$res .= emit_shuffle_code();
 
+	my $allinfo = get_info_for_codes($collection_items);
+	my $alllabels;
+
 	$res .= $q->start_table({-class=>"neat1", -id=>"items"}) .
-		$q->Tr( $q->th( ["", "Code", "Type", "Comments"]) );
+		$q->Tr( $q->th( ["", "Code", "Type", "Info"]) );
 	for(@$collection_items)
 	{
 	    my ($acode, $rank) = @$_;
+	    my $info = $allinfo->{$acode};
+	    my $data = $info->{data};
+	    my $rowclass = '';
 
-	    my ($owner, $type, $date, $comments, $fromcode, $tocode) = bcgetinfofornumber($acode);
+	    #Do I need disposal info?  It does mean a lot of extra DB access.
+# 	    my ($dispdate, $dispcomments) = bcdisposedateandcomments($bc);
+# 	    if($dispdate)
+# 	    {
+# 		$rowclass = "disposed";
+# 	    }
 
-	    $res .= "\n" . $q->Tr({-id=>"$rank"}, $q->td([
+	    #Build a code description from the info we have
+	    my $codedesc;
+	    my @labels = @{ $alllabels->{$info->{type}} ||= [ get_printable_column($info->{type}) ] };
+	    if($data)
+	    {
+		$codedesc = ( @labels ? (join(' / ', @$data{@labels}) . '.') : '');
+		$codedesc .= " $data->{comments}.";
+		#Or else
+		$codedesc .= " $data->{created_by} on $data->{creation_date}.";
+	    }
+	    else
+	    {
+		$codedesc = "No data recorded.";
+		$rowclass = "unused";
+	    }
+	    if($info->{comments})
+	    {
+		$codedesc .= " Block: $info->{comments}.";
+	    }
+
+	    $res .= "\n" . $q->Tr({-id=>"$rank", -class=>$rowclass, -code=>$acode}, $q->td([
 		make_buttons($acode, $rank),
 		codetolink($acode),
-		$type,
-		$comments
+		bczapunderscores($info->{type}),
+		$codedesc
 	    ]));
 	}
 
@@ -417,13 +541,18 @@ sub show_editor
 		"Codes to add", $q->textarea(-name => "codes", -rows => 8, -columns => 40) 
 	    ])) .
 	    $q->end_table() .
-	    $q->br . $q->submit("Commit changes");
+	    $q->br .
+	    $q->submit({-name=>'commit', -label=>"Commit changes", -onClick=>'submit_hook()'});
 
     #Now the JavaScript
     $res .= "
     <script type='text/javascript'>
-	var delbtn = document.amendcollection.delete;
+	var delbtn = document.amendcollection.deletebtn;
 	delbtn.setAttribute('disabled',true);
+
+	var pc_check = document.amendcollection.pc;
+	var pa_check = document.amendcollection.pa;
+	var pd_check = document.amendcollection.pd;
 
 	function really_clicked(){
 	    if(document.amendcollection.really.checked)
@@ -431,11 +560,113 @@ sub show_editor
 	    else
 		delbtn.setAttribute('disabled', true);
 	}
+
+	function pc_clicked(){
+	  if(!pc_check.checked)
+		pd_check.checked = pa_check.checked = false;
+	}
+
+	function pd_clicked(){
+	  if(pd_check.checked || pa_check.checked)
+	    pc_check.checked = true;
+	}
+
+	function pa_clicked(){
+	    pd_clicked();
+	}
+
     </script>
     ";
 
     $res;
 }
+
+sub get_info_for_codes
+{
+    my @codes = sort {$a <=> $b} map {$_->[0]} @{$_[0]};
+
+    #Retrieve information about codes and return a hashref of code => {info}
+    my %allinfo;
+
+    #Cache range info for all codes so I don't have to alternate between calling
+    #bcgetinfofornumber and fetching data
+    for my $code (@codes)
+    {
+	my $info = $allinfo{$code} = {};
+
+	@$info{qw(owner type date comments fromcode tocode)} = bcgetinfofornumber($code);
+    }
+
+    #Now try to get the info without too many queries.  Maybe a bit fiddly, but in most cases
+    #will minimise database hits, which is good!
+    my $lasttype = '';
+    my $lastcode = 0; my $firstcode = 0;
+    my $sth = undef; my $res;
+    for my $code (@codes, -1)
+    {
+	my $info = $allinfo{$code};
+	if($code == -1 || $info->{type} ne $lasttype || $code - $lastcode > 100)
+	{
+	    if($sth)
+	    {
+		$sth->execute($firstcode, $lastcode);
+		$res = $sth->fetchall_arrayref({});
+
+		for(@$res)
+		{
+		    if($allinfo{$_->{barcode}})
+		    {
+			$allinfo{$_->{barcode}}->{data} = $_;
+		    }
+		}
+	    }
+
+	    next if $code == -1;
+	    $sth = bcprepare("
+		     SELECT * FROM ". bctypetotable($info->{type}) . " WHERE
+		     barcode >= ? and barcode <= ?");
+	    $lasttype = $info->{type};
+	    $lastcode = $firstcode = $code;
+	}
+	else
+	{
+	    $lastcode = $code;
+	}
+    }
+    \%allinfo;
+}
+
+sub get_printable_column
+{
+    my ($itemtype) = @_;
+
+    #Return the names of all printable columns in order.
+    #Cut-and-paste from print_barcodes.cgi
+
+    #Get all the column names - this is cut-and-paste from reqcsv in request_barcodes
+    #but I should really have a utility function to get a list of col names.
+    my $sth = bcprepare("
+            SELECT * FROM " . bctypetotable($itemtype) . "
+            LIMIT 1");
+    $sth->execute();
+
+    #We need to know about the headers, data or no data
+    my @headings = @{$sth->{NAME}};
+    $sth->finish();
+
+    #Now find "print" flags while I apply demotions - messy
+    my (@demoted, @undemoted);
+    for(@headings)
+    {
+        my $flags = bcgetflagsforfield($itemtype, $_);
+        if($flags->{print})
+        {
+            $flags->{demote} ? push(@demoted, $_) : push(@undemoted, $_);
+        }
+    }
+    ( @undemoted, @demoted );
+}
+
 
 sub emit_shuffle_code
 {
@@ -444,6 +675,7 @@ sub emit_shuffle_code
     q|<script type='text/javascript'>
 
 	var items_table;
+	var items_moved = false;
 
 	function get_items(){
 	    if(items_table == undefined)
@@ -460,38 +692,35 @@ sub emit_shuffle_code
 	    {
 		totr.appendChild(fromtr.childNodes[0]);
 	    }
-	    for(var att=0; att<fromtr.attributes.length; att++)
+	    /* Copying all attributes fails in IE so just copy id, code, style and class */
+
+	    var atts = ['id', 'code', 'style', 'class'];
+	    for(var nn = 0; nn < atts.length; nn++)
 	    {
-		totr.setAttribute(fromtr.attributes[att].name, fromtr.attributes[att].value);
+		try {
+		    totr.setAttribute(atts[nn], fromtr.attributes[atts[nn]].value);
+		} catch(e) {;}
 	    }
+	    
 	    items_table.removeChild(fromtr);
+
+	    items_moved = true;
 	}
 
 	function flash_row(i)
 	{
 	    var tr = items_table.rows[i];
 	    xflash(tr.getAttribute('id'), 0, -2);
-	/*    for(var td=0; td<tr.cells.length; td++)
-	    {
-		tr.cells[td].setAttribute('style', 'background-color:yellow');
-	    }
-	    setTimeout('unflash(' + i + ')', 200); */
 	}
 
-	function unflash(i)
-	{
-	    var tr = items_table.rows[i];
-	    for(var td=0; td<tr.cells.length; td++)
-	    {
-		tr.cells[td].removeAttribute('style');
-	    }
-	}
 	function xflash(i, col1, col2)
 	{
 	    var tr = items_table.rows.namedItem(i);
 	    if(tr == undefined) return;
 	    if(col1 < tr.cells.length)
-		tr.cells[col1].setAttribute('style', 'background-color:lightblue');
+	    /* This fails in IE		
+		tr.cells[col1].setAttribute('style', 'background-color:lightblue'); */
+	    tr.cells[col1].style.backgroundColor = 'lightblue';
 	    if(col2 >= 0)
 		tr.cells[col2].removeAttribute('style');
 	    if(col2  + 1 < tr.cells.length)
@@ -503,7 +732,7 @@ sub emit_shuffle_code
 	    var tr = items_table.rows.namedItem(i);
 	    if(tr == undefined) return;
 	    if(col1 < tr.cells.length)
-		tr.cells[col1].setAttribute('style', 'background-color:red');
+		tr.cells[col1].style.backgroundColor = 'red';
 	    if(col2 >= 0)
 		tr.cells[col2].removeAttribute('style');
 	    if(col2  + 1 < tr.cells.length)
@@ -538,6 +767,28 @@ sub emit_shuffle_code
 	    get_items();
 
 	    xdel(i, 0, -2);
+
+	    items_moved = true;
+	}
+
+	function submit_hook(){
+	    /*If any shuffling was done, save the new list of codes into the codes1
+	    hidden parameter*/
+	    if (! items_moved) return;
+	    var amendform = document.getElementById('amendcollection');
+	    var codes_list = 'c';
+
+	    for(var nn = 1; nn < items_table.rows.length; nn++)
+	    {
+		codes_list = codes_list + ' ' + items_table.rows[nn].getAttribute('code');
+	    }
+
+	    var codes1 = amendform.ownerDocument.createElement("input");
+	    codes1.setAttribute("type", "hidden");
+	    codes1.setAttribute("id", "codes1");
+	    codes1.setAttribute("name", "codes1");
+	    codes1.setAttribute("value", codes_list);
+	    amendform.appendChild(codes1);
 	}
 
     </script>|;
@@ -545,6 +796,9 @@ sub emit_shuffle_code
 
 sub emit_images
 {
+    #Embed the icons in the HTML because I can.  This won't work on IE.  Tough luck.
+    #IE users don't deserve pretty images.
+
     (my $upimg = 'data:image/png;base64,
 	    iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABGdBTUEAALGPC/xhBQAAAAZiS0dE
 	    AAAAAAAA+UO7fwAAAAlwSFlzAAAASAAAAEgARslrPgAAAAl2cEFnAAAADAAAAAwAzqUyfgAAAF5J
@@ -574,14 +828,28 @@ sub emit_images
 	var downimg = '$downimg';
 	var delimg = '$delimg';
 
-	get_items();
-	for(var nn = 1; nn < items_table.rows.length; nn++)
+	function apply_one_image(spanelem, name, img)
 	{
-	    var col =  items_table.rows[nn].cells[0].getElementsByTagName('img');
-	    col.namedItem('up').setAttribute('src', upimg);
-	    col.namedItem('down').setAttribute('src', downimg);
-	    col.namedItem('del').setAttribute('src', delimg);
+	    spanelem.innerHTML = '';
+	    var imgelem = spanelem.appendChild(document.createElement('img'));
+	    imgelem.setAttribute('alt', name);
+	    imgelem.setAttribute('border', '0');
+	    imgelem.setAttribute('src', img);
 	}
+
+	function apply_images()
+	{
+	    get_items();
+	    for(var nn = 1; nn < items_table.rows.length; nn++)
+	    {
+		var col =  items_table.rows[nn].cells[0].getElementsByTagName('span');
+		apply_one_image(col.namedItem('up'), 'up', upimg);
+		apply_one_image(col.namedItem('down'), 'down', downimg);
+		apply_one_image(col.namedItem('del'), 'del', delimg);
+	    }
+	}
+
+	if(navigator.userAgent.indexOf("MSIE") == -1) apply_images();
 
     </script>|;
 }
@@ -592,9 +860,12 @@ sub make_buttons
     my ($acode, $rank) = @_;
 
 #     $q->i("up/down/delete");
-    $q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<img alt='up' id='up' src='' border='0'/>") . '/' .
-    $q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<img alt='down' id='down' src='' border='0'/>") . '/' .
-    $q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<img alt='del' id='del' src='' border='0'/>") ;
+#     $q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<img alt='up' id='up' src='' border='0'/>") . '/' .
+#     $q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<img alt='down' id='down' src='' border='0'/>") . '/' .
+#     $q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<img alt='del' id='del' src='' border='0'/>") ;
+    $q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<span id='up'>up</span>") . '/' .
+    $q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<span id='down'>down</span>") . '/' .
+    $q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<span id='del'>del</span>") ;
 }
 
 sub edit_collection()
@@ -603,13 +874,22 @@ sub edit_collection()
 	my $id = int_nowarn($q->param('id'));
 	my $nickname = check_nickname($q->param('nickname'));
 	my $comments = $q->param('comments');
+	my $codes_to_shuffle = $q->param('codes1');
 	my $codes_to_add = $q->param('codes');
+	my @publish = map {$q->param($_) || '0'} qw(publish_codes publish_ancestors publish_descendants);
 	my $message = $q->h2("Updating collection...") . "\n";
+
+	if($codes_to_shuffle)
+	{
+	    #Remove existing
+	    bcdeletefromcollection($id);
+	    bcappendtocollection($id, [codelist_normalise($codes_to_shuffle)]);
+	} 
 
 	#Codes list will be expanded as per the disposals box
 	my @codelist = codelist_normalise($codes_to_add);
 
-	bcupdatecollection($id, undef, $userdata->{username}, $nickname, $comments);
+	bcupdatecollection($id, undef, $userdata->{username}, $nickname, $comments, @publish);
 
 	my $codesadded = bcappendtocollection($id, \@codelist);
 	my $codecount = scalar(@codelist);
@@ -651,7 +931,7 @@ sub delete_collection
 
     bcdeletecollection($id);
 
-    ($id, "Collection was successfully deleted.\n");
+    ($id, "Collection $id was successfully deleted.\n");
 }
 
 
@@ -685,9 +965,9 @@ sub bad_user_error
 sub codelist_normalise
 {
     #Take the box with the numbers in and return an array of codes
-	#This is copy-and-pase from request_barcodes but a little different -
-	#ranges given in reverse order will be preserved in that order.
-	#Also, everything will be converted to an integer.
+    #This is copy-and-pase from request_barcodes but a little different -
+    #ranges given in reverse order will be preserved in that order.
+    #Also, everything will be converted to an integer.
     my $list = shift;
     my @res;
 
@@ -701,6 +981,9 @@ sub codelist_normalise
 		
 		#Now collapse any spaces which are not bounded by digits
 		s/ :/:/g;s/: /:/g;
+
+		#Now trim
+		s/^ //; s/ $//;
     }
 
     #Right-ho
@@ -747,9 +1030,9 @@ our ($dbobj, $dbh);
 
 sub bccreatecollection
 {
-    my ($prefix, $username, $nickname, $comments) = @_;
+    my ($prefix, $username, $nickname, $comments, @publish) = @_;
 
-    #Could get the database to assign the ID.  Usual problem that I then need to
+    #Could get the database to assign the ID internally.  Usual problem that I then need to
     #do a read to get the ID back which is a pain.
     
     #First get a write lock as below
@@ -761,12 +1044,15 @@ sub bccreatecollection
     #Case where the table is empty
     $next_id ||= 1;
 
+    #And no undefs in the publish array
+    $publish[$_] ||= 0 for (0..2);
+
     #Log the collection in the database
     $dbh->do("INSERT INTO barcode_collection
-              (prefix, id, username, nickname, comments)
+              (prefix, id, username, nickname, comments, publish_codes, publish_ancestors, publish_descendants)
 				values
-			  (?,?,?,?,?)", undef,
-			$prefix, $next_id, $username, $nickname, $comments);
+			  (?,?,?,?,?,?,?,?)", undef,
+			$prefix, $next_id, $username, $nickname, $comments, @publish);
 
     #Log it
     bclogevent( 'newcoll', $username, undef, undef,
@@ -779,15 +1065,21 @@ sub bccreatecollection
 
 sub bcupdatecollection
 {
-    #my ($id, $prefix, $username, $nickname, $comments) = @_;
+    #my ($id, $prefix, $username, $nickname, $comments, @publish_*) = @_;
     my $id = shift;
+
+    #Now need to pad args array to 7
+    $_[6] = $_[6];
 
     my $rows = $dbh->do("UPDATE barcode_collection SET
 		prefix = coalesce(?, prefix),
 		username = coalesce(?, username),
 		nickname = coalesce(?, nickname),
 		comments = coalesce(?, comments),
-		modification_timestamp = now()
+		modification_timestamp = now(),
+		publish_codes = coalesce(?, publish_codes),
+		publish_ancestors = coalesce(?, publish_ancestors),
+		publish_descendants = coalesce(?, publish_descendants)
 	      WHERE id = $id", undef, @_);
 
     $rows or die "No collection with ID $id.";
@@ -837,19 +1129,18 @@ sub bcappendtocollection
     scalar(@remaining);
 }
 
-=useless
 sub bcdeletefromcollection
 {
     my ($collid, $codes) = @_;
 
     #Will delete all the given codes and report the number of successes.  Codes in the list but not
     #in the collection will have no effect.
+    $codes and die "Deleting just a subset of codes currently doesn't work!";
 
-    my $deletions = $dbh->do('delete from ... where ...');
+    my $deletions = $dbh->do('DELETE FROM barcode_collection_item WHERE collection_id = ?', undef, $collid);
 
     return $deletions;
 }
-=cut
 
 sub bcdeletecollection
 {
@@ -862,54 +1153,9 @@ sub bcdeletecollection
 	"Failed to delete collection with ID $collid.\n";
 }
 
-
-sub bcgetcollectioninfo
-{
-    my ($collid) = @_;
-
-    $collid or return undef;
-
-    #$collid can be a nickname or a number
-    #Get the appropriate line from barcode_collection
-    my $info;
-    if($collid =~ /\D/)
-    {
-	$info = $dbh->selectrow_hashref("SELECT *, 
-					 to_char(creation_timestamp, 'FMDDth Mon YYYY, HH24:MI') as creation,
-					 to_char(modification_timestamp, 'FMDDth Mon YYYY, HH24:MI') as modification
-					 FROM barcode_collection WHERE nickname = ?",
-					 undef, $collid);
-    }
-    else
-    {
-	#DEBUG
-# 	die $dbh->selectrow_array("show search_path");
-
-	$info = $dbh->selectrow_hashref("SELECT *,
-					 to_char(creation_timestamp, 'FMDDth Mon YYYY, HH24:MI') as creation,
-					 to_char(modification_timestamp, 'FMDDth Mon YYYY, HH24:MI') as modification
-					 FROM barcode_collection WHERE id = $collid");
-    }
-    $info or return undef;
-
-    #Now determine the print name
-    $info->{print_name} = defined($info->{nickname}) ? $info->{nickname} : "$info->{prefix}.$info->{id}";
-    $info;
-}
-
-sub bcgetcollectionitems
-{
-    my ($collid) = @_;
-
-    $collid = int_nowarn($collid);
-
-    $dbh->selectall_arrayref("SELECT barcode, rank FROM barcode_collection_item WHERE
-			      collection_id = $collid order by rank, barcode");
-}
-
 sub {
     local our @EXPORT =  qw(bccreatecollection bcupdatecollection bcappendtocollection 
-			    bcdeletecollection bcgetcollectioninfo bcgetcollectionitems);
+			    bcdeletefromcollection bcdeletecollection);
     barcodeUtil->export_to_level(1);
 };
 

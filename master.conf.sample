@@ -1,50 +1,44 @@
-#barcodes.conf - created Fri Sep 30 09:36:16 2005
+# master.conf example file
 #
-# This is a config file for the barcode system.  Read it using Config::Simple
+# This is a config file for the Handlebar system.  Read it using Config::Simple
 #
-# This sample file demonstrates how to enable the master query mode over all databases.
-# The file still needs to e called barcodes.conf, but the MASTER_SEARCH parameter
-# tells query_barcodes that it should go into multi-database mode.
+# This is a configuration file for running the public_query.cgi script over several
+# databases.  The script will determine which database to use based on code or collection
+# the user searches for and load the corresponding configuration file.
 
-PAGE_TITLE: Master query for all barcode databases.
-PAGE_DESC: Query multiple databases
+PAGE_TITLE: Handlebar query
+PAGE_DESCRIPTION: Query published collections
+PAGE_MAINTAINER: Tim Booth (helpdesk@envgen.nox.ac.uk)
+STYLESHEET: /~tbooth/cgi-bin/test_barcode/package/bcstyle.css
 
 #This is the important one.  Set it to the number of databases in use, then
 #set parameters for the databases below.
 MASTER_SEARCH: 3
 
-#Display all codes in the form 00-000000
-#These will be the defaults used in the script, but
-#you can override these on a per-database level, if you wish.
-PREFIX_LENGTH: 2
-POSTFIX_LENGTH: 6
-SPACER_CHAR: -
-
-#The standard data schema and connection bumph, also 
-#overridable per database.  I assume you at least want to set
-#DATABASE_NAME_xx for each one.
-DATA_SCHEMA: data
-
-DATABASE_HOST: localhost
-DATABASE_USER: www-data
-DATABASE_PASS: 
-DATABASE_NAME: undef
+#You can bypass the publication checks - useful for testing or for replacing the
+#old master query functionality found in query_barcodes.cgi, which could view
+#any code.
+DISABLE_PUBLICATION_CHECK: 0
 
 #Databases are numbered from 1.  For each of the databases you must at least
-#give the high and low codes.  A label is also a good idea - (note that you 
-#cannot set a default label, nor can you override the PAGE_TITLE or PAGE_DESC.)
-DATABASE_NAME_1: test_barcode
-LABEL_1: Test database
-LOW_CODE_1: 0
+#give the high and low codes and the prefix or prefixes used for collections.  
+#A label is also a good idea - if you set a description here it will override
+#the PAGE_DESCRIPTION from the CONFIG_FILE.
+DESCRIPTION_1: Test database
+LOW_CODE_1: 1
 HIGH_CODE_1: 999999
+COLLECTION_PREFIX_1: coll.00 demo
+CONFIG_FILE_1: /home/tbooth/sandbox/handlebar/barcodes.conf
 
-DATABASE_NAME_2: handlebar1
-LABEL_2: Production database 1
+DESCRIPTION_2: Production database 1 (MM)
 LOW_CODE_2: 01-000000
 HIGH_CODE_2: 01-999999
+COLLECTION_PREFIX_2: coll.01
+CONFIG_FILE_2: /home/tbooth/sandbox/handlebar_mm/barcodes.conf
 
-DATABASE_NAME_3: handlebar2
-LABEL_2: Production database 2
-LOW_CODE_3: 02-000000
-HIGH_CODE_3: 02-999999
+DESCRIPTION_2: Default database
+LOW_CODE_3: 20-000000
+HIGH_CODE_3: 20-999999
+COLLECTION_PREFIX_3: coll.20
+CONFIG_FILE_3: /usr/lib/cgi-bin/handlebar/barcodes.conf
 
