@@ -20,3 +20,48 @@ I'll stick with Envgen.
 get list of all the sql files
 compile them with a download link and a browse history link
 add a form to submit types by asking for the .sql file and mailing it to me
+
+Template management 3/4/09:
+
+Problems with these templates...
+
+1. Different databases have different schemas to handlebar_sys and handlebar_data
+2. Different databases have different users (webuser, www-data, etc.)
+3. Running psql is not obvious for everyone
+4. Derived templates may depend on something else (eg. everything depends on generic)
+5. Converting a template to HTML requires loading into a database and then dumping out again
+
+Solution:
+
+Expand the dumptypes.perl to be a generic template manipulator, supporting the following ops:
+
+Dump all types (as before)
+Dump only selected types (-t flag)
+Dump just SQL to STDOUT (-S) (as per extra_admin)
+Dump just HTML to STDOUT (-H)
+
+Load SQL into database (-l -f <file>)
+
+-- Barcodes.conf will be read to determine the host, user account, database and schemas for
+-- setting up the tables.  The script will attempt to actually log into the database using
+-- default credentials (ie. as if you just typed 'psql -h ... -d ...').  If this fails, or 
+-- if -p option is set, the user will be prompted.
+-- The SQL will be dismembered so that the correct accounts and schemas are used.  There will
+-- be a -k flag to keep the old data table and a -D flag to delete only.  -k should set the 
+-- hide flag on the table (-Dk will effectively rename to a temporary name).
+
+Convert SQL into HTML (-H -f <file>)
+
+-- This involves creating a temporary table for 'barcode_description', a temporary data table
+-- and then loading the definition before dumping it again.  This should only require the normal
+-- access to the database as any user can create a temp table.  Shouldn't need the SQL template for
+-- barcode description as I can copy what is there.
+
+This is a lot of work for not much gain (could just load definition, dump, delete) - I'll leave it for now.
+
+Test loadings (on my test DB):
+
+I want to see about a typedef with entries, one without, and one totally new.
+nucleic_acid_extracts has 6 entries
+pcr_products has 0
+migs_extract is new

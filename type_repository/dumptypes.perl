@@ -11,7 +11,7 @@ use Getopt::Std;
 my $usage = 
 "dumptypes.perl [options] <target dir>
 	options: -f(orce) = overwrite without prompt
-			 -h(idden) = dump all the hidden types\n";
+		 -h(idden) = dump all the hidden types\n";
 
 #Add flag to include/exclude hidden types.
 #Need optarg to do that properly
@@ -30,7 +30,7 @@ if(! -d $target_dir)
 {
     if(!$force)
     {
-		ask("Directory $target_dir does not exist.  Create it?") or exit 0;
+	ask("Directory $target_dir does not exist.  Create it?") or exit 0;
     }
     mkdir $target_dir or die "Could not make directory $target_dir";
 }

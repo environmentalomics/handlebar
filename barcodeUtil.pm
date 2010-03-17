@@ -68,10 +68,10 @@ BEGIN { if($ENV{GATEWAY_INTERFACE}){
 	our $conf;
 	unless($conf)
 	{
-		eval{
+	    eval{
 		Config::Simple->import_from('barcodes.conf', $conf);
-		};
-		$conf = {} if $@;
+	    };
+	    $conf = {} if $@;
 	}
 	my $contact = $conf->{PAGE_MAINTAINER} || "the website maintainer";
 	
@@ -84,7 +84,8 @@ BEGIN { if($ENV{GATEWAY_INTERFACE}){
 	<p>Time: ", scalar(gmtime), " UTC.</p>
 	<p>Error message: <pre>", $err, "</pre></p>
 	<p>Param dump: <pre>",
-	escapeHTML(Dumper({$q->Vars()})), "</pre>";
+	$q ? escapeHTML(Dumper({$q->Vars()})) : "Query object \$q is null\n", 
+	"</pre>";
     };		    
     CGI::Carp::set_message($carper);
 } };
@@ -125,7 +126,7 @@ sub _configure
 	my $filename = shift or die "No configuration file specified.\n";
 	Config::Simple->import_from($filename, $conf);
 
-        die "Cannot read configuration file $filename\n" unless (%$conf);
+	die "Cannot read configuration file $filename\n" unless (%$conf);
 
 	#Compensate for broken Config::Simple
 	for(keys %$conf)
@@ -167,9 +168,9 @@ sub connectnow
     %$actualconf or die "Problem reading config file. Configuration is empty!\n";
 
     eval{
-		$dbobj = barcodeDB->new($actualconf);
-		$dbh = $dbobj->get_handle();
-		$DATA_SCHEMA = $dbobj->get_data_schema();
+	$dbobj = barcodeDB->new($actualconf);
+	$dbh = $dbobj->get_handle();
+	$DATA_SCHEMA = $dbobj->get_data_schema();
     };
     #Now if the connection fails, die immediately if under CGI
     $@ and http() ? die $@ : warn $@;
@@ -599,7 +600,7 @@ sub bcdescribetype
 				($row->{COLUMN_NAME},
 				 $row->{TYPE_NAME},
 				 $row->{COLUMN_SIZE},
-				 $q->escapeHTML($row->{REMARKS})) ] ));	
+				 $q->escapeHTML($row->{REMARKS})) ] )), "\n";	
     };
 
     #Now the final complication is that I am supporting the 'demote'
@@ -625,7 +626,7 @@ sub bcdescribetype
 	&$printrowsub(@$row);
     }
 													  
-    print $ios $q->end_table;
+    print $ios $q->end_table, "\n";
 
 $ios->str;
 }
@@ -1041,6 +1042,9 @@ sub bcgetbctypes
     {
 	@types = grep {!bcgetflagsforfield($_)->{hide}} @types;
     }
+
+    #Always disregard old backup tables created by type loader
+    @types = grep {! /^..._old_\d{10}$/} @types;
     
     [sort(@types)];
 };
@@ -1150,7 +1154,7 @@ sub bcdequote
     #But I also need to remove leading zeros, or my hash-based detection of
     #matches between input and database screws up!
     $code =~ s/^0+//;
-    $code;
+    $code || 0;
 }
 
 #Rather than keep explaining what the SQL types mean, convert

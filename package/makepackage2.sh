@@ -17,7 +17,7 @@ if [[ `id -u` != "0" ]] ; then
 fi
 
 #Although of course being real root is a silly idea and what I really want to do is
-#just run this script under fakeroot.  TODO!
+#just run this script under fakeroot.  DONE!
 
 #Subroutine to collect all the files up
 collectfiles ()

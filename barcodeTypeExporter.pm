@@ -3,7 +3,7 @@ use strict; use warnings;
 
 # This is the code to export barcode types (ie. database tables).  It is used
 # both from the admin_barcodes.cgi and from utility scripts, hence split
-# out into and extra file.
+# out into an extra file.
 
 package barcodeTypeExporter;
 use barcodeUtil;
@@ -13,7 +13,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(dump_sql dump_desc);
 
-our $PG_DUMP = "pg_dump";
+our $PG_DUMP = $ENV{PG_DUMP} || "pg_dump";
 
 sub dump_sql
 {
@@ -48,10 +48,10 @@ sub dump_sql
       #snoop the password using 'ps euww' - ye be warned!
       local $ENV{PGPASSWORD} = $conn_params->{dbpass};
       
-      my $command = "$PG_DUMP -sO -n $conn_params->{dbschema} -t $typename";
+      my $command = "$PG_DUMP -sO -t '$conn_params->{dbschema}.$typename'";
       $tabledump = `$command` or die diagnose('pg_dump of table', $command);
 
-      my $command2 = "$PG_DUMP -aO -t barcode_description";
+      my $command2 = "$PG_DUMP -aO -t '$conn_params->{sysschema}.barcode_description'";
       $descdump = `$command2` or die diagnose('pg_dump of description data', $command2);
 
     }; #End block for local environment
@@ -59,7 +59,7 @@ sub dump_sql
     my $res = '';
 
     # 1
-    $res .= "
+    $res .= "-- DO NOT HAND EDIT THIS FILE if you want to use it with the typeio loader tool.\n--
 -- Barcode type $typename
 -- Exported from $conn_params->{dbname} on " . ($conn_params->{dbhost} || "local server") . "
 -- At time " . localtime($now) . "
