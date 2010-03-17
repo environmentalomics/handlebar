@@ -772,4 +772,22 @@ and add new prefixes.
 
 Small fix - in the table view it would be handy to have different colour codes for unused and disposed barcodes.  As long as I don't do this by adding a 'style' attribute to the table cells this should not interfere with my flashing code.
 
+On 23/3:
 
+After demo-ing to Yan, some minor fixes:
+
+bcdequote('00-000000') now returns 0, not ''
+If there is no comment on a barcode in a collection, we no longer get a warning and an orphaned period.
+Arrows and cross in the form now stick together (white-space=nowrap)
+Javascript prevents selecting 'publish ancestors' without 'publish codes' in creation form as well as editor form
+You get a proper error if you try to update a collection to have the same nickname as another collection
+
+### I thought there was some other problem later in the year, possibly noted by Helen, but I can't remember it.
+### Yes, see mail sent on 16 Dec.
+### Cryptic error when putting 0 into a barcode field in Excel then uploading it
+
+On 4/3 -
+
+Dawn is asking about the type templates again.  I remember working on a script to allow loading of these
+without needing to manually edit the thing and then load it with PSQL.   Where the hell did I put it?
+Ah, I just made some notes in type_repository/README but never actually did the script, by the looks of things.

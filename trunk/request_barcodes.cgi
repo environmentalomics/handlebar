@@ -888,7 +888,10 @@ sub importrecords
     #because the database sees extra bind values.  Leave in the check here as it is still applicable
     #to CSV.
     {local $Data::Dumper::Terse = 1;
-    $headings = [map {tr/ /_/; s/\W//g; $_ || 
+    $headings = [map {my $h = $_;
+		      $h =~ tr/ /_/; 
+		      $h =~ s/\W//g; 
+		      $h || 
 			   die "Invalid or blank column heading in first row of input file. " .
 			       "This normally means that data has been inserted into a cell " .
 			       "to the right of the last column which causes the sheet to expand and " .

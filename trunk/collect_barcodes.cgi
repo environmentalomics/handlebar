@@ -130,7 +130,7 @@ for(1)
 	else
 	{
 	    bcrollback();
-	    @res = (gen_error($@), show_editor_or_error($q->param('id')));
+	    @res = (gen_create_error($@), show_editor_or_error($q->param('id')));
 	}
 	print prompt_small(), @res;
     last};
@@ -281,7 +281,18 @@ sub prompt_for_create
 	]),$q->td([
 	    '', $q->submit("Create collection") 
     ]),])) .
-    $q->end_form() ;
+    $q->end_form() .
+    "
+	<script type='text/javascript'>
+	    var pc_check = document.makecollectionform.pc;
+	    var pa_check = document.makecollectionform.pa;
+	    var pd_check = document.makecollectionform.pd;
+    "
+    . emit_click_triggers() .
+    "
+	</script>
+    ";
+
 }
 
 sub check_nickname
@@ -507,7 +518,7 @@ sub show_editor
 	    if($data)
 	    {
 		$codedesc = ( @labels ? (join(' / ', @$data{@labels}) . '.') : '');
-		$codedesc .= " $data->{comments}.";
+		$codedesc .= " $data->{comments}." if $data->{comments};
 		#Or else
 		$codedesc .= " $data->{created_by} on $data->{creation_date}.";
 	    }
@@ -522,10 +533,10 @@ sub show_editor
 	    }
 
 	    $res .= "\n" . $q->Tr({-id=>"$rank", -class=>$rowclass, -code=>$acode}, $q->td([
-		make_buttons($acode, $rank),
-		codetolink($acode),
-		bczapunderscores($info->{type}),
-		$codedesc
+		    make_buttons($acode, $rank),
+		    codetolink($acode),
+		    bczapunderscores($info->{type}),
+		    $codedesc
 	    ]));
 	}
 
@@ -546,14 +557,24 @@ sub show_editor
 
     #Now the JavaScript
     $res .= "
-    <script type='text/javascript'>
-	var delbtn = document.amendcollection.deletebtn;
-	delbtn.setAttribute('disabled',true);
+	<script type='text/javascript'>
+	    var delbtn = document.amendcollection.deletebtn;
+	    delbtn.setAttribute('disabled',true);
 
-	var pc_check = document.amendcollection.pc;
-	var pa_check = document.amendcollection.pa;
-	var pd_check = document.amendcollection.pd;
+	    var pc_check = document.amendcollection.pc;
+	    var pa_check = document.amendcollection.pa;
+	    var pd_check = document.amendcollection.pd;
+    "
+    . emit_click_triggers() .
+    "
+	</script>
+    ";
 
+    $res;
+}
+
+sub emit_click_triggers
+{ "
 	function really_clicked(){
 	    if(document.amendcollection.really.checked)
 		delbtn.removeAttribute('disabled');
@@ -574,12 +595,7 @@ sub show_editor
 	function pa_clicked(){
 	    pd_clicked();
 	}
-
-    </script>
-    ";
-
-    $res;
-}
+" };
 
 sub get_info_for_codes
 {
@@ -863,9 +879,10 @@ sub make_buttons
 #     $q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<img alt='up' id='up' src='' border='0'/>") . '/' .
 #     $q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<img alt='down' id='down' src='' border='0'/>") . '/' .
 #     $q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<img alt='del' id='del' src='' border='0'/>") ;
-    $q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<span id='up'>up</span>") . '/' .
-    $q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<span id='down'>down</span>") . '/' .
-    $q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<span id='del'>del</span>") ;
+    $q->span( {-style => 'white-space:nowrap' }, 
+	$q->a({-onClick => "move_up($rank)", -href => 'javascript:;'}, "<span id='up'>up</span>") . '/' .
+	$q->a({-onClick => "move_down($rank)", -href => 'javascript:;'}, "<span id='down'>down</span>") . '/' .
+	$q->a({-onClick => "delete_the_bugger($rank)", -href => 'javascript:;'}, "<span id='del'>del</span>") );
 }
 
 sub edit_collection()

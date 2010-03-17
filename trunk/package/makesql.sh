@@ -1,13 +1,11 @@
 #!/bin/sh
 # This script updates barcodebase.sql by reading the schema from the development
-# database.  barcodebase.sql should contain the definitive SQL script to go in the package, ie.
+# database.  handlebar.sql should contain the definitive SQL script to go in the package, ie.
 # with the public user as www-data and the administrator as PostgreSQL, but this does not
 # quite match my development setup, hence a bit of sed munging to do.
 #
 # If you are not Tim Booth and are trying to make the package building work, you
 # are going to have to modify this script as it is not generic.  Good luck!
-#
-# If you are Tim Booth then Hi! You sure are one handsome and brainy dude!
 
 # Passowrd hack if you need it.
 # if [[ "x$PGPASSWORD" == 'x' ]] ; then
@@ -24,7 +22,7 @@ OUTFILE=handlebar.sql
 
 cat > $OUTFILE <<MSG
 --
--- These are the SQL commands needed to setup the initial Barcodebase database.
+-- These are the SQL commands needed to setup the initial Handlebar database.
 -- This file will be loaded by the installation script if you opt for automatic
 -- configuration, otherwise see the WIKI for details of configuration.
 --

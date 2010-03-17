@@ -11,6 +11,7 @@ use MIME::Lite;
 our %CONFIG = %{bcgetconfig()};
 our $SUBMIT_MAIL_ADDRESS = $CONFIG{SUBMIT_MAIL_ADDRESS};
 our $SMTP_SERVER = $CONFIG{SMTP_SERVER};
+our $CUSTOM_HEADER = $CONFIG{CUSTOM_HEADER};
 
 my $q = bcgetqueryobj;
 
@@ -27,8 +28,8 @@ for($q)
 	if(!$q->param('email'))
 	{
 		$result = gen_error("Please give a valid e-mail address.  This will be used only to contact you 
-							 regarding this submission and will not be published, added to mailing
-			                 lists or otherwise disseminated.");	
+				     regarding this submission and will not be published, added to mailing
+			             lists or otherwise disseminated.");	
 		last;
 	}
 	
@@ -49,13 +50,13 @@ for($q)
 	else
 	{
 		$result = gen_error("Sorry - there was an internal error and the submission failed.  If you wish,
-							 you can simply send the template by e-mail to $SUBMIT_MAIL_ADDRESS.");
+				     you can simply send the template by e-mail to $SUBMIT_MAIL_ADDRESS.");
 	}
 }
 
 #Print top stuff - TODO simulate the nav banner with links to the main site
 print bcheader(), bcstarthtml($title),
-	  $q->div({-id=>"topbanner"}, repo_navbanner(), bch1($title)), 
+	  $q->div({-id=>"topbanner"}, customheader(), repo_navbanner(), bch1($title)), 
 	  $q->start_div({-id=>"mainsection"}),
 	  $result, "\n";
 
@@ -92,35 +93,35 @@ sub mail_it_then
 
 	my @mailargs;
 
-    if($SMTP_SERVER) {
-		MIME::Lite->send('smtp', $SMTP_SERVER, Timeout=>60);
+	if($SMTP_SERVER) {
+	    MIME::Lite->send('smtp', $SMTP_SERVER, Timeout=>60);
 	}
 	my $msg = MIME::Lite->new(
-			To => $SUBMIT_MAIL_ADDRESS,
+	    To => $SUBMIT_MAIL_ADDRESS,
             From => "$user\@$host",
-			Subject => "A barcode template submission from $realname",
-			Type    => 'multipart/mixed',
+	    Subject => "A barcode template submission from $realname",
+	    Type    => 'multipart/mixed',
 	);
 
 	$msg->attach( Type => "TEXT",
-				  Data => join('', 
-					  " Mail generated at ", scalar(localtime()), ".\n",
-					  " From $realname ($email) on ", $q->remote_host(), ".\n",
-					  " Filename is $sqlfilename.\n\n",
-					  "BYE.\n" )
-				);
+		      Data => join('', 
+			      " Mail generated at ", scalar(localtime()), ".\n",
+			      " From $realname ($email) on ", $q->remote_host(), ".\n",
+			      " Filename is $sqlfilename.\n\n",
+			      "BYE.\n" )
+		    );
 	
 	$msg->attach( Type     => 'text/plain',
-				  Disposition => 'attachment',
-				  Filename => ($sqlfilename =~ /([^\\\/]+$)/)[0],
-				  FH => $sqlfile );
+		      Disposition => 'attachment',
+		      Filename => ($sqlfilename =~ /([^\\\/]+$)/)[0],
+		      FH => $sqlfile );
 
 	$msg->send();
 }
 
 sub gen_error
 {
-	"\n" .
+    "\n" .
       $q->div({-class=>"errorbox", -style=>"margin-top:1em"}, "<p><b>Error:</b></p>" . join("<br />\n", @_));
 }
 
@@ -130,7 +131,7 @@ sub repo_navbanner
 
 	#Equivalent of the internal navigation banner for the repository.
 	my @sections = (
-		{ href=>"http://handlebar.sourceforge.net", label=>"Handlebar home page" },
+	    { href=>"http://handlebar.sourceforge.net", label=>"Handlebar home page" },
 	    { href=>"showtypes.cgi",   label=>"Browse templates" },
 	    { href=>"submit_a_type.cgi",   label=>"Submit a template" },
 	);
@@ -148,18 +149,30 @@ sub repo_navbanner
 # 	$res .= $q->start_div({-id=>"topbanner"});
 #     }
 
-	$res .= 
+    $res .= 
       $q->div( {-class=>'navbanner_outer'},
-		  $q->span( {-id=>'navbanner', -class=>'navbanner'},
-	  "Template repository menu:", join("  ", map { $q->span(
-					    $_->{current} ?
-					      { -class=>"navbanner_current" } : (),
-					    $q->a({-href=>$_->{href}, -target=>$_->{target}}, 
-						   $nbsp->($_->{label})))
-					 } @sections
-			    )
-			  )
+      $q->span( {-id=>'navbanner', -class=>'navbanner'},
+    	  "Template repository menu:", 
+	    join("  ", 
+		map { $q->span( $_->{current} ? { -class=>"navbanner_current" } : (),
+				$q->a({-href=>$_->{href}, -target=>$_->{target}}, 
+				$nbsp->($_->{label})))
+		    } @sections
+	   )
+	)
       );
 
-	$res;
+    $res;
 }
+
+sub customheader
+{
+    my $res = '';
+    if(open(my $cf, $CUSTOM_HEADER))
+    {
+        $res = join('', <$cf>);
+        close $cf;
+    }
+    $res;
+}
+

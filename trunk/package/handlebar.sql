@@ -1,5 +1,5 @@
 --
--- These are the SQL commands needed to setup the initial Barcodebase database.
+-- These are the SQL commands needed to setup the initial Handlebar database.
 -- This file will be loaded by the installation script if you opt for automatic
 -- configuration, otherwise see the WIKI for details of configuration.
 --
@@ -62,6 +62,19 @@ CREATE SCHEMA handlebar_sys;
 ALTER SCHEMA handlebar_sys OWNER TO postgres;
 
 SET search_path = handlebar_data, pg_catalog;
+
+--
+-- Name: array_accum(anyelement); Type: AGGREGATE; Schema: handlebar_data; Owner: postgres
+--
+
+CREATE AGGREGATE array_accum(anyelement) (
+    SFUNC = array_append,
+    STYPE = anyarray,
+    INITCOND = '{}'
+);
+
+
+ALTER AGGREGATE handlebar_data.array_accum(anyelement) OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -479,21 +492,6 @@ CREATE TABLE barcode_user (
 
 
 ALTER TABLE handlebar_sys.barcode_user OWNER TO postgres;
-
-SET search_path = handlebar_data, pg_catalog;
-
---
--- Name: array_accum(anyelement); Type: AGGREGATE; Schema: handlebar_data; Owner: postgres
---
-
-CREATE AGGREGATE array_accum(anyelement) (
-    SFUNC = array_append,
-    STYPE = anyarray,
-    INITCOND = '{}'
-);
-
-
-ALTER AGGREGATE handlebar_data.array_accum(anyelement) OWNER TO postgres;
 
 SET search_path = genquery, pg_catalog;
 

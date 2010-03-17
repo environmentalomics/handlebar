@@ -40,7 +40,7 @@ use IO::String;
 #Reader bits...
 
 #OK, first off we have the dates problem.  Dates in Excel are like some kind of
-#feakish nightmare.  I don't even want to go into them.  Generally the ParseExcel
+#freakish nightmare.  I don't even want to go into them.  Generally the ParseExcel
 #module is able to sort out the dates correctly, but for any Excel file saved
 #in OpenOffice it was returning integers.  So, how does it tell the difference
 #between an integer and a date?  It guesses!  But it guesses a bit wrong. Here
