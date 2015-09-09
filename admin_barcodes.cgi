@@ -558,7 +558,7 @@ $ACTIONS{"split"} = sub{
 
 $ACTIONS{usermodify} = sub{
     
-    my $username = $q->param('username') or die "No user name given\n";
+    my $username = lc($q->param('username')) or die "No user name given\n";
     my $fullname = $q->param('fullname');
     my $email = $q->param('email');
     my $institute = $q->param('institute');

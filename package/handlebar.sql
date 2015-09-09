@@ -11,28 +11,28 @@ CREATE USER "www-data";
 -- PostgreSQL database dump
 --
 
+SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 --
 -- Name: handlebar; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE handlebar WITH TEMPLATE = template0 ENCODING = 'UTF8';
+CREATE DATABASE handlebar WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_GB.UTF-8' LC_CTYPE = 'en_GB.UTF-8';
 
 
 ALTER DATABASE handlebar OWNER TO postgres;
 
 \connect handlebar
 
+SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 --
 -- Name: genquery; Type: SCHEMA; Schema: -; Owner: postgres
@@ -60,6 +60,20 @@ CREATE SCHEMA handlebar_sys;
 
 
 ALTER SCHEMA handlebar_sys OWNER TO postgres;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
 
 SET search_path = handlebar_data, pg_catalog;
 
@@ -265,6 +279,60 @@ INHERITS (generic);
 
 
 ALTER TABLE handlebar_data.library_plate OWNER TO postgres;
+
+--
+-- Name: migs_env_sample; Type: TABLE; Schema: handlebar_data; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE migs_env_sample (
+    barcode bigint,
+    sample_point_location character varying(20) NOT NULL,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    depth_or_altitude real NOT NULL,
+    time_of_day character varying(5),
+    habitat_type character varying(50) NOT NULL,
+    biomaterial_treatment text,
+    volume_of_sample real,
+    sampling_strategy text,
+    CONSTRAINT time_of_day_format CHECK (((time_of_day)::text ~ '^[0-9][0-9]:[0-9][0-9]$'::text))
+)
+INHERITS (generic);
+
+
+ALTER TABLE handlebar_data.migs_env_sample OWNER TO postgres;
+
+--
+-- Name: migs_extract; Type: TABLE; Schema: handlebar_data; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE migs_extract (
+    barcode bigint,
+    source_material_collection character varying(50) NOT NULL,
+    source_material_id character varying(50) NOT NULL,
+    organism text,
+    sample_point_location character varying(20) NOT NULL,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    depth_or_altitude real NOT NULL,
+    time_of_day character varying(5),
+    habitat_type character varying(50) NOT NULL,
+    biomaterial_treatment text,
+    volume_of_sample real,
+    sampling_strategy text,
+    isolation_and_growth_cond character varying(50),
+    nuc_acid_ext_method character varying(50) NOT NULL,
+    nuc_acid_amplification character varying(50) NOT NULL,
+    library_size integer,
+    library_vector character varying(50),
+    volume_of_extract real,
+    concentration real,
+    CONSTRAINT time_of_day_format CHECK (((time_of_day)::text ~ '^[0-9][0-9]:[0-9][0-9]$'::text))
+)
+INHERITS (generic);
+
+
+ALTER TABLE handlebar_data.migs_extract OWNER TO postgres;
 
 --
 -- Name: nucleic_acid_extracts; Type: TABLE; Schema: handlebar_data; Owner: postgres; Tablespace: 
@@ -493,6 +561,92 @@ CREATE TABLE barcode_user (
 
 ALTER TABLE handlebar_sys.barcode_user OWNER TO postgres;
 
+SET search_path = handlebar_data, pg_catalog;
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY biofilm_sample ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY fish_individual ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY library_plate ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY migs_env_sample ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY migs_extract ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY nucleic_acid_extracts ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY pcr_products ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY sediment_sample ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY soil_sample ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY subclone_plate ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY transformation_mix ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
+--
+-- Name: auto_timestamp; Type: DEFAULT; Schema: handlebar_data; Owner: postgres
+--
+
+ALTER TABLE ONLY water_sample ALTER COLUMN auto_timestamp SET DEFAULT now();
+
+
 SET search_path = genquery, pg_catalog;
 
 --
@@ -543,6 +697,22 @@ ALTER TABLE ONLY generic
 
 ALTER TABLE ONLY library_plate
     ADD CONSTRAINT pk_library_plate PRIMARY KEY (barcode);
+
+
+--
+-- Name: pk_migs_env_sample; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY migs_env_sample
+    ADD CONSTRAINT pk_migs_env_sample PRIMARY KEY (barcode);
+
+
+--
+-- Name: pk_migs_extract; Type: CONSTRAINT; Schema: handlebar_data; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY migs_extract
+    ADD CONSTRAINT pk_migs_extract PRIMARY KEY (barcode);
 
 
 --
@@ -869,6 +1039,26 @@ GRANT ALL ON TABLE library_plate TO "www-data";
 
 
 --
+-- Name: migs_env_sample; Type: ACL; Schema: handlebar_data; Owner: postgres
+--
+
+REVOKE ALL ON TABLE migs_env_sample FROM PUBLIC;
+REVOKE ALL ON TABLE migs_env_sample FROM postgres;
+GRANT ALL ON TABLE migs_env_sample TO postgres;
+GRANT ALL ON TABLE migs_env_sample TO "www-data";
+
+
+--
+-- Name: migs_extract; Type: ACL; Schema: handlebar_data; Owner: postgres
+--
+
+REVOKE ALL ON TABLE migs_extract FROM PUBLIC;
+REVOKE ALL ON TABLE migs_extract FROM postgres;
+GRANT ALL ON TABLE migs_extract TO postgres;
+GRANT ALL ON TABLE migs_extract TO "www-data";
+
+
+--
 -- Name: nucleic_acid_extracts; Type: ACL; Schema: handlebar_data; Owner: postgres
 --
 
@@ -998,11 +1188,11 @@ GRANT SELECT,INSERT,UPDATE ON TABLE barcode_user TO "www-data";
 -- PostgreSQL database dump
 --
 
+SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 SET search_path = handlebar_sys, pg_catalog;
 
@@ -1021,8 +1211,6 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('fish_samp
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'storage_location', 'Where the sample is stored');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('fish_sample', 'sex', 'You must enter ''m'' or ''f''');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('fish_sample', 'fish_id', 'are these a standard length?  I guessed at allowing up to 20 chars.');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('nucleic_acid_extracts', '-', 'Extracts link back to the original sample');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_products', '*-', NULL);
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('subclone_plate', '*-', NULL);
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('subclone_plate', 'source_well_number', 'The well on the source plate.  Eg "C5"');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('generic', '*-', 'hide');
@@ -1038,7 +1226,6 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'resi
 e.g. ampicillin, tetracycline');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'storage_method', 'Method used for storage of cells, including temperature: e.g. ''10%
 glycerol at -80C'', ''7% DMSO at -80C''');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_products', 'target_gene', 'Gene to which PCR primers were targeted: e.g. ''16S rDNA'', ''amyA'', ''nifH''');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('soil_sample', 'depth_in_cm', 'Depth of soil core from from surface, in centimetres');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('fish_individual', 'fish_id', NULL);
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('sediment_sample', 'depth_in_cm', 'Depth from sediment/water interface in centimetres.');
@@ -1056,7 +1243,6 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('library_p
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('library_plate', 'library_type', 'The type of the library - eg Fosmid.');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('library_plate', '*source_mix_barcode', 'bc');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('library_plate', 'source_mix', 'Used to identify the mix if it is not a barcoded item');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_products', '*source_nucleic_acid_barcode', 'bc');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('soil_sample', '-', 'Any sample of soil');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('subclone_plate', '*source_plate_barcode', 'bc');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('water_sample', 'volume_filtered', 'in litres');
@@ -1068,12 +1254,73 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('transform
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('water_sample', 'filter_type', 'Collection filter used, with pore size: e.g. Sterivex 0.22m, GF/A 1.6m - or else Bottle if the water was just bottled');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('water_sample', 'prefilter', 'If used, the prefilter applied to the sample before filtering proper');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('water_sample', 'post_filtering_treatment', 'Action taken to stabilise or otherwise treat the sample: e.g. Snap frozen,Lugol,RNAlater');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'sample_site_code', 'Identification of the exact sample site.  If the study area has been gridded out, for example, then give the grid location here.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'time_of_day', 'If it is important to identify the time of day as well as the collection date then do so here.  Format must be hh:mm in 24-hour clock');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'volum_of_extract', 'in µl :- not required for MIGS');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', '-', 'Template suitable for capturing MIGS data where the original sample is NOT logged using the ''migs env sample'' template - eg. it comes from an existing sample collection.  Where the sample already has such a code, ''migs env extract'' should be used instead.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'sample_barcode', 'Barcode of original sample, must be of type ''migs env sample'' or a derivative thereof.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'isolation_and_growth_cond', 'Reference to published protocol used (PMID or DOI).  This is mandatory for MIGS but may be blank here if protocol is unpublished at time of processing.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'biomaterial_treatment', 'Description of any further treatment in addition to that recorded againsta the original sample barcode.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'volum_of_extract', 'in µl :- not required for MIGS');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'concentration', 'Spectrophotometric, fluorescence or gel quantitation of nucleic acid
+concentration in ng/µl :- not required for MIGS.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', '*sample_barcode', 'bc');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'library_size', 'If a library was made, indicate the size');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'library_vector', 'If a library was made, indicate the cloning vector');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'nuc_acid_ext_method', 'Extraction method; terms chould come from CV');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'nuc_acid_amplification', 'Amplification method; terms should come from CV');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'organism', 'If the extract is from a single identified organism, MIGS requires that the organism is identified and that various features are recorded.  This field provides for storing a reference to such information, and should be used as required.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'volume_of_sample', 'in litres, optional');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'depth_or_altitude', 'Sampling depth in metres.  Surface samples or unknown should be recorded at 0.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'sample_point_location', 'Textual description or identifier of the point where the sample was taken');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'latitude', 'Point latitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'longitude', 'Point longitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'time_of_day', 'Optional if more precision is wanted for creation_date.  Must be in HH:MM format.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'habitat_type', 'This term must be taken from EnvO - see (http://environmentontology.org)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'source_material_collection', 'Identify the origin of the original sample - eg. culture collection, sample set');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'source_material_id', 'An identifier within the source material collection');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'sampling_strategy', 'CV term or terms describing sampling strategy (screened, enriched, normalized)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_extract', 'volume_of_extract', 'in µl :- not required for MIGS');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', '-', 'This template captures the description required by MIGS (MIMS) for environmental sources.  It may be used directly or a new, more specific, type may inherit from this template.  To capture further MIGS fields, downstream products should be logged using the ''migs env extract'' template.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'volume_of_sample', 'in litres, optional');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'depth_or_altitude', 'Sampling depth in metres.  Surface samples or unknown should be recorded at 0.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'sample_point_location', 'Textual description or identifier of the point where the sample was taken');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'latitude', 'Point latitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'longitude', 'Point longitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'time_of_day', 'Optional if more precision is wanted for creation_date.  Must be in HH:MM format.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'habitat_type', 'This term must be taken from EnvO - see (http://environmentontology.org)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'sampling_strategy', 'CV term or terms describing sampling strategy (screened, enriched, normalized)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('migs_env_sample', 'biomaterial_treatment', 'Description of treatment of sample at time of collection - eg. filtering, snap-freezing, addition of stabilizing agents.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'organism', 'If the extract is from a single identified organism, MIGS requires that the organism is identified and that various features are recorded.  This field provides for storing a reference to such information, and should be used as required.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'volume_of_sample', 'in litres, optional');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'depth_or_altitude', 'Sampling depth in metres.  Surface samples or unknown should be recorded at 0.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'sample_point_location', 'Textual description or identifier of the point where the sample was taken');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'latitude', 'Point latitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'longitude', 'Point longitude of sampling location');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'time_of_day', 'Optional if more precision is wanted for creation_date.  Must be in HH:MM format.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'habitat_type', 'This term must be taken from EnvO - see (http://environmentontology.org)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'source_material_collection', 'Identify the origin of the original sample - eg. culture collection, sample set');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'source_material_id', 'An identifier within the source material collection');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'sampling_strategy', 'CV term or terms describing sampling strategy (screened, enriched, normalized)');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'volume_of_extract', 'in µl :- not required for MIGS');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('nucleic_acid_extracts', '-', 'Extracts link back to the original sample');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('nucleic_acid_extracts', 'volume', 'in µl');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('nucleic_acid_extracts', 'concentration', 'Spectrophotometric, fluorescence or gel quantitation of nucleic acid
 concentration in ng/µl.');
 INSERT INTO barcode_description (typename, columnname, notes) VALUES ('nucleic_acid_extracts', '*sample_barcode', 'bc');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'sample_site_code', 'Identification of the exact sample site.  If the study area has been gridded out, for example, then give the grid location here.');
-INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'time_of_day', 'If it is important to identify the time of day as well as the collection date then do so here.  Format must be hh:mm in 24-hour clock');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', '-', 'Template suitable for capturing MIGS data where the original sample is NOT logged using the ''migs env sample'' template - eg. it comes from an existing sample collection.  Where the sample already has such a code, ''migs env extract'' should be used instead.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'sample_barcode', 'Barcode of original sample, must be of type ''migs env sample'' or a derivative thereof.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'isolation_and_growth_cond', 'Reference to published protocol used (PMID or DOI).  This is mandatory for MIGS but may be blank here if protocol is unpublished at time of processing.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'biomaterial_treatment', 'Description of any further treatment in addition to that recorded againsta the original sample barcode.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'concentration', 'Spectrophotometric, fluorescence or gel quantitation of nucleic acid
+concentration in ng/µl :- not required for MIGS.');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', '*sample_barcode', 'bc');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'library_size', 'If a library was made, indicate the size');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'library_vector', 'If a library was made, indicate the cloning vector');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'nuc_acid_ext_method', 'Extraction method; terms chould come from CV');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('mig_old_1268842876', 'nuc_acid_amplification', 'Amplification method; terms should come from CV');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_products', 'target_gene', 'Gene to which PCR primers were targeted: e.g. ''16S rDNA'', ''amyA'', ''nifH''');
+INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_products', '*source_nucleic_acid_barcode', 'bc');
 
 
 --
@@ -1084,11 +1331,11 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('-', 'time
 -- PostgreSQL database dump
 --
 
+SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 SET search_path = genquery, pg_catalog;
 
@@ -1313,11 +1560,11 @@ INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, 
 -- PostgreSQL database dump
 --
 
+SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
 
 SET search_path = genquery, pg_catalog;
 

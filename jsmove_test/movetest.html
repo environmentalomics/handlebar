@@ -1,0 +1,46 @@
+<html><head>
+<script type="text/javascript" src="dump_src.js"></script>
+<script type="text/javascript">
+function moveRow(i, j) {
+    var myTable = document.getElementById("myTable").getElementsByTagName("tbody")[0];
+
+    var fromtr=myTable.getElementsByTagName("tr")[i];
+    var totr=myTable.insertRow(j) //insert after position to move to
+    while(fromtr.hasChildNodes())
+    {
+	totr.appendChild(fromtr.childNodes[0]);
+    }
+    myTable.removeChild(fromtr);
+}
+</script>
+</head>
+<body>
+<table id="myTable" border="1">
+<tr>
+    <td><a href="javascript:;" onclick="moveRow(1,0)">Down</a></td>
+    <!--<td><input type="button" onclick="moveRow(1, 0)" value="Change Content"></td>-->
+<td>Row1 cell1</td>
+<td>Row1 cell2</td>
+</tr>
+<tr>
+<td>Row2 cell1</td>
+<td>Row2 cell2</td>
+</tr>
+<tr>
+<td>Row3 cell1</td>
+<td>Row3 cell2</td>
+</tr>
+<tr>
+<td>Row4 cell1</td>
+<td>Row4 cell2</td>
+</tr>
+<tr>
+<td>Row5 cell1</td>
+<td>Row5 cell2</td>
+</tr>
+</table>
+<form>
+<input type="button" onclick="moveRow(1, 0)" value="Change Content">
+</form>
+</body>
+</html>

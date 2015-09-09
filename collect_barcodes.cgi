@@ -48,7 +48,7 @@ use IO::String;
 $\ = "\n";
 
 #Check the username
-our $userdata = bcchkuser($q->param('username'));
+our $userdata = bcchkuser(lc($q->param('username') || ''));
 
 sub main
 {
@@ -337,14 +337,9 @@ sub create_collection
 # 	my @dupesfound = codelist_killdupes(\@codelist);
 	#TODO - report to the user if dupes were removed.
 
-	#Decide what prefix I should be using for collections
-	my $prefix = $COLLECTION_PREFIX ||
-		    "coll." . substr(bcquote($MIN_BAR_CODE), 0, $PREFIX_LENGTH);
-	$prefix =~ s/\.$//;
-
 	if(!$publish_codes) { $publish_ancestors = $publish_descendants = 0 };
 
-	my $new_collection_id = bccreatecollection($prefix, $userdata->{username}, $nickname,
+	my $new_collection_id = bccreatecollection(undef, $userdata->{username}, $nickname,
 						   $comments, $publish_codes, $publish_ancestors, $publish_descendants);
 
 	#Super, now add all the codes into it.
@@ -356,7 +351,8 @@ sub create_collection
 	    $message .= "WARNING: " . ($codecount - $codesadded) . " duplicate codes were pruned from the list.\n";
 	}
 
-	$message .= $q->p("A new collection $prefix.$new_collection_id has been created with $codecount items.\n");
+	$message .= $q->p("A new collection " . bcgetcollectionprefix() . ".$new_collection_id ".
+	                  "has been created with $codecount items.\n");
 	
 	$message .= $q->p( "The collection will be " . publish_message($publish_codes, $publish_ancestors, $publish_descendants) . ".\n" );
 
@@ -1038,148 +1034,6 @@ sub codelist_killdupes
 
  	return wantarray ? (grep { $_ > 1 } values %seen) : ($orig_count - scalar(@$numbers));
 }
-
-### Now some barcodeUtil stuff which is only relevant to collections...
-do{
-package barcodeUtil;
-
-our ($dbobj, $dbh);
-
-sub bccreatecollection
-{
-    my ($prefix, $username, $nickname, $comments, @publish) = @_;
-
-    #Could get the database to assign the ID internally.  Usual problem that I then need to
-    #do a read to get the ID back which is a pain.
-    
-    #First get a write lock as below
-    $dbh->do("LOCK barcode_collection IN EXCLUSIVE MODE");
-
-    my ($next_id) = $dbh->selectrow_array("
-	    SELECT max(id) + 1 FROM barcode_collection
-	    ");
-    #Case where the table is empty
-    $next_id ||= 1;
-
-    #And no undefs in the publish array
-    $publish[$_] ||= 0 for (0..2);
-
-    #Log the collection in the database
-    $dbh->do("INSERT INTO barcode_collection
-              (prefix, id, username, nickname, comments, publish_codes, publish_ancestors, publish_descendants)
-				values
-			  (?,?,?,?,?,?,?,?)", undef,
-			$prefix, $next_id, $username, $nickname, $comments, @publish);
-
-    #Log it
-    bclogevent( 'newcoll', $username, undef, undef,
-		"User $username created a new collection $next_id with " . 
-		defined($nickname) ? "nickname $nickname." : "no nickname."
-	);
-    
-    $next_id;
-}
-
-sub bcupdatecollection
-{
-    #my ($id, $prefix, $username, $nickname, $comments, @publish_*) = @_;
-    my $id = shift;
-
-    #Now need to pad args array to 7
-    $_[6] = $_[6];
-
-    my $rows = $dbh->do("UPDATE barcode_collection SET
-		prefix = coalesce(?, prefix),
-		username = coalesce(?, username),
-		nickname = coalesce(?, nickname),
-		comments = coalesce(?, comments),
-		modification_timestamp = now(),
-		publish_codes = coalesce(?, publish_codes),
-		publish_ancestors = coalesce(?, publish_ancestors),
-		publish_descendants = coalesce(?, publish_descendants)
-	      WHERE id = $id", undef, @_);
-
-    $rows or die "No collection with ID $id.";
-    
-    #Log it
-    bclogevent( 'editcoll', $_[1], "coll$id", undef,
-		"Collection with ID $id was updated:\n" . join("\n", @_));
-}
-
-sub bcappendtocollection
-{
-    my ($collid, $codes) = @_;
-
-    #Adds codes and returns the number added.
-    #Skips any dupes
-    #Dies on a bad code
-    #Need to check that the codes are not in there already and add them to the end.
-
-    my $codescount = scalar(@$codes) or return 0;
-
-    #First get a write lock to make this concurrency-safe
-    $dbh->do("LOCK barcode_collection_item IN EXCLUSIVE MODE");
-
-    #Fetch existing codes for collid
-    my $existing = bcgetcollectionitems($collid);
-
-    #Remove codes found in $existing or duplicate in list
-    my %seen;
-    map {$seen{$_->[0]}++} @$existing;
-    my @remaining = grep {!$seen{$_}++} map {int($_)} @$codes;
-
-    return 0 if !@remaining;
-
-    #Check that all the remaining codes are allocated in the database
-    for(@remaining)
-    {
-	bcrangemembertobase($_) or die "Code ". bcquote($_) . " is not allocated.\n";
-    }
-    my $rank = @$existing ? $existing->[-1]->[1] : 0;
-
-    my $sth = $dbh->prepare("INSERT INTO barcode_collection_item 
-			     (collection_id, barcode, rank) 
-			     VALUES (?, ?, ?)");
-    
-    $sth->execute($collid, $_, ++$rank) for @remaining;
-
-    scalar(@remaining);
-}
-
-sub bcdeletefromcollection
-{
-    my ($collid, $codes) = @_;
-
-    #Will delete all the given codes and report the number of successes.  Codes in the list but not
-    #in the collection will have no effect.
-    $codes and die "Deleting just a subset of codes currently doesn't work!";
-
-    my $deletions = $dbh->do('DELETE FROM barcode_collection_item WHERE collection_id = ?', undef, $collid);
-
-    return $deletions;
-}
-
-sub bcdeletecollection
-{
-    my ($collid) = @_;
-
-    #Expunge a whole collection.  Should I even allow this???
-    $dbh->do("DELETE FROM barcode_collection_item WHERE collection_id = ?", undef, $collid);
-
-    $dbh->do("DELETE FROM barcode_collection WHERE id = ?", undef, $collid) or die
-	"Failed to delete collection with ID $collid.\n";
-}
-
-sub {
-    local our @EXPORT =  qw(bccreatecollection bcupdatecollection bcappendtocollection 
-			    bcdeletefromcollection bcdeletecollection);
-    barcodeUtil->export_to_level(1);
-};
-
-} #end package spazz
-
-->();#  # Is this some kind of ASCII-art dude?
-
 
 main();
 

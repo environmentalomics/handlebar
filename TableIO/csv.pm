@@ -1,11 +1,11 @@
 #!perl
 use strict; use warnings;
 
-# CVS $Revision$ committed on $Date: 2006/02/27 14:11:01 $ by $Author: milo $
+# CVS $Revision: 25 $ committed on $Date: 2006/02/27 14:11:01 $ by $Author: milo $
 
 package TableIO::csv;
 use base "TableIO::base";
-(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
+(our $VERSION = '2.$Revision: 25 $') =~ y/[0-9.]//cd;
 
 #Get reader and writer from the base package
 sub reader {goto &TableIO::base::reader};

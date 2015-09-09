@@ -1,11 +1,11 @@
 #!perl
 use strict; use warnings;
 
-# CVS $Revision$ committed on $Date: 2006/09/15 13:40:00 $ by $Author: tbooth $
+# CVS $Revision: 27 $ committed on $Date: 2006/09/15 13:40:00 $ by $Author: tbooth $
 
 package TableIO;
 our $TableIO = "TableIO";
-(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
+(our $VERSION = '2.$Revision: 27 $') =~ y/[0-9.]//cd;
 
 =head1 NAME
 

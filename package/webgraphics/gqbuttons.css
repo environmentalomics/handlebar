@@ -21,6 +21,10 @@
 head:first-child+body .icon { /* For non-IE browsers*/
   height: 0px;
 }
+head:first-child+body .icon .buttontext { /* For Firefox > 3.5 */
+      display: none;
+}
+.icon:hover {text-decoration:none; background-color:transparent;}
 /* end of hack */
 
 /* Settings for each icon

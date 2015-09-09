@@ -73,14 +73,14 @@ sub dbconnect
     my $s = shift()->{s};
 
     #Check that we have all four.
-    scalar(grep {defined($_)} values(%$s)) == 7 
+    values(%$s) == 7 
 	or die "Missing some database connection parameters in barcodes.conf\n";
 
     my $dbh = eval{
 	      DBI->connect("DBI:Pg:dbname=$s->{dbname}" . 
 				($s->{dbhost} ? ";host=$s->{dbhost}" : "") .
 				($s->{dbport} ? ";port=$s->{dbport}" : "") ,
-			   "$s->{dbuser}", "$s->{dbpass}",
+			   $s->{dbuser}, $s->{dbpass},
 			   {RaiseError=>1, AutoCommit=>0, Taint=>1})
     };
  

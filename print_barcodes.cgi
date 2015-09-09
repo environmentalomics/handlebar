@@ -47,19 +47,21 @@ our $topmessagemaxlen = 36;
 our $WIKIHARDWAREURL = "http://darwin.nerc-oxford.ac.uk/pgp-wiki/index.php/" .
 		       "Barcode_user_guide#Setting_up_and_Using_the_Barcode_Hardware";
 
-our %printers = (
-    epl2824=> "Local Zebra TLP2824",
-    mailout=> "Request printing from $CENTRE",
-);
+our %printers;
+$printers{epl2824} = "Local Zebra TLP2824";
+$printers{mailout} = "Request printing from $CENTRE" if $CENTRE;
 
 our %labelsize = (
     '25x10'=>"25x10mm suitable for individual Eppendorfs",
     '47x13'=>"47x13mm standard size",
+    '2-up'=>"51x25mm 2 codes per label",
+    '4-up'=>"51x25mm 4 codes per label",
 );
+my @labelsize_arr = qw(25x10 47x13 4-up 2-up);
 
 #>> End of configuration
 	
-my $username = $q->param("username");
+my $username = lc($q->param("username") || '');
 my $fromcode = bcdequote($q->param("fromcode"));
 my $tocode = bcdequote($q->param("tocode"));
 my $dest = $q->param("dest");
@@ -262,14 +264,14 @@ my $ios = new IO::String;
 		 An EPL file will be generated with the printer commands in it.  If you
 		 have already set up your printer on your machine then just click the link 
 		 below, choose \"Open with\" and select the application 
-		 /usr/local/bin/zebraprint on Linux or zebraprint.bat on Windows.  
-		 See <a href='$WIKIHARDWAREURL'>the Wiki page</a>
+		 /usr/local/bin/zebraprint on Linux or <a href='zebraprint_bat.cgi'>zebraprint.bat</a> on Windows.  
+		 See <a href='$barcodeUtil::HELP_LINK'>the manual</a>
 		 for instructions on setting up and troubleshooting the printers.
 	  "),
 	  $q->p("You have chosen to print labels of size <b>$labelsize{$size}</b>.  Please ensure 
 		 that labels of this size are loaded into the printer.  If you have changed the 
 		 labels in the printer then you may need to recalibrate the unit to the new label size.  
-		 Again, see the Wiki page for instructions."),
+		 Again, see the user manual for instructions."),
 	  $q->p($q->a({-href=>$url}, "Download EPL file"));
 
 $ios->str();
@@ -411,16 +413,16 @@ my $ios = new IO::String;
 	  $q->table( {-class => "formtable"},
 	      $q->Tr($q->td( ["Printer ", $q->scrolling_list(
 					    -name=> "dest",
-					    -values=> ["epl2824", "mailout"],
+					    -values=> [sort keys %printers],
 					    -multiple=> 0,
 					    -size=> 2,
 					    -labels=> \%printers)			
 			     ] )),
 	      $q->Tr($q->td( ["Label size ", $q->scrolling_list(
 					    -name=> "size",
-					    -values=> ["25x10", "47x13"],
+					    -values=> \@labelsize_arr,
 					    -multiple=> 0,
-					    -size=> 2,
+					    -size=> scalar(@labelsize_arr),
 					    -labels=> \%labelsize,
 					    -default=> "47x13")
 			    ] )),				    
@@ -549,6 +551,108 @@ sub makeepl
 
 	 push @cmds, 'P1';
 	}
+    }
+    elsif($size eq "4-up")
+    {
+	my $labelwidth = 51;
+	my $labelheight = 25;
+	my $dotspermm = 8;
+
+	#Position of barcode and text relative to bounding box.
+	my $ro = 12;
+	my $to = 0;
+	my $bto = $to + 12;
+	my $bro = 16;
+
+	#Settings for bounding box
+	my $bbtop = 12;
+	my $bbleft_init = 4;
+	my $bbleft_inc = 12 * $dotspermm;
+
+	#Set the settings
+	push @cmds, 'US1',     #Error reports on
+		    'D13',     #Force darker printing - seems everyone needs it.
+	            'q' . ($labelwidth * $dotspermm),
+	            ;
+
+	for(my $n = $fromcode ; $n <= $tocode ; $n += 4)
+	{
+	    #When positioning a rotated code the co-ords set the top right
+	    my $bbright = $bbleft_init + $bbleft_inc;
+	    push @cmds, 'N';
+	    for($n..$n+3)
+	    {
+		last if ($_ > $tocode);
+		 #In this case, just pad out the code to 8 chars
+		 #This is hard-coded due to label size
+		 my $number = sprintf("%08d", $_);
+
+		#The label (xoff,yoff,rot,font,hmul,vmul,N/R)
+		my $_ro = $bbright - $to;
+		my $_to = $bbtop + $ro;
+		push @cmds, qq{A$_ro,$_to,1,1,1,1,N,"$topmessage"};
+
+		#The code (xoff,yoff,rot,type,nwidth,wwidth,height,B/N)
+		$_ro = $bbright - $bto;
+		$_to = $bbtop + $bro;
+		push @cmds, qq{B$_ro,$_to,1,2,2,4,36,B,"$number"};
+
+		$bbright += $bbleft_inc;
+	    }
+	    push @cmds, "P1";
+	}
+
+    }
+    elsif($size eq "2-up")
+    {
+	my $labelwidth = 51;
+	my $labelheight = 25;
+	my $dotspermm = 8;
+
+	#Position of barcode and text relative to bounding box.
+	my $ro = 12;
+	my $to = 0;
+	my $bto = $to + 12;
+	my $bro = 16;
+
+	#Settings for bounding box
+	my $bbtop = 0;
+	my $bbleft_init = 4;
+	my $bbleft_inc = 25 * $dotspermm;
+
+	#Set the settings
+	push @cmds, 'US1',     #Error reports on
+		    'D13',     #Force darker printing - seems everyone needs it.
+	            'q' . ($labelwidth * $dotspermm),
+	            ;
+
+	for(my $n = $fromcode ; $n <= $tocode ; $n += 2)
+	{
+	    #When positioning a rotated code the co-ords set the top right
+	    my $bbleft = $bbleft_init;
+	    push @cmds, 'N';
+	    for($n..$n+1)
+	    {
+		last if ($_ > $tocode);
+		 #In this case, just pad out the code to 8 chars
+		 #This is hard-coded due to label size
+		 my $number = sprintf("%08d", $_);
+
+		#The label (xoff,yoff,rot,font,hmul,vmul,N/R)
+		my $_ro = $bbleft + $ro;
+		my $_to = $bbtop + $to;
+		push @cmds, qq{A$_ro,$_to,1,1,1,1,N,"$topmessage"};
+
+		#The code (xoff,yoff,rot,type,nwidth,wwidth,height,B/N)
+		$_ro = $bbleft + $bro;
+		$_to = $bbtop + $bto;
+		push @cmds, qq{B$_ro,$_to,0,2,2,4,36,B,"$number"};
+
+		$bbleft += $bbleft_inc;
+	    }
+	    push @cmds, "P1";
+	}
+
     }
     elsif($size eq "47x13")
     {

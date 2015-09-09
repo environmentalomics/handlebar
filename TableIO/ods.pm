@@ -3,7 +3,7 @@ use strict; use warnings;
 
 package TableIO::ods;
 use base "TableIO::base";
-(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
+(our $VERSION = '2.$Revision: 25 $') =~ y/[0-9.]//cd;
 
 #Get reader and writer from the base package
 sub reader {goto &TableIO::base::reader};

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #Script to build all the packages etc. in one go.
+umask 022
 
 echo Generating dump file... ; ./makesql.sh
 

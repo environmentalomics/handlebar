@@ -45,6 +45,8 @@ our $MAX_CODES = $barcodeUtil::MAX_CODES;
 our $STRICT_USER_NAMES = $barcodeUtil::STRICT_USER_NAMES;
 our $STYLESHEET = $barcodeUtil::STYLESHEET;
 our $ENABLE_PRINTING = $barcodeUtil::ENABLE_PRINTING;
+our $ENABLE_PLUGIN = $CONFIG{ENABLE_PLUGIN} || '';
+our $_PLUGIN_HANDLE = undef;
 
 our $PAGE_MAINTAINER = $CONFIG{PAGE_MAINTAINER};
 
@@ -62,7 +64,7 @@ use IO::String;
   sub str{${shift()->string_ref }} }
 
 #Get params
-our $username = $q->param("username");
+our $username = lc($q->param("username") || '');
 our $bctype = $q->param("bctype");
 our $bcquantity = bcdequote($q->param("bcquantity")); 
 our $bccomments = $q->param("bccomments");
@@ -526,11 +528,11 @@ MAIN: for(1){
 	  bch1(($PAGE_DESC ? "$PAGE_DESC - " : "") . "Request interface"),
 	  jumplinks(),
 	  ( $CONFIG{PAGE_MESSAGE} ? $q->p($CONFIG{PAGE_MESSAGE}) : '' ),
-	  reqform(),
-	  $q->hr, expform(),
-	  $q->hr, impform(),
-	  $q->hr, dispform(),
-	  $q->hr,
+	  ( $ENABLE_PLUGIN ? pluginform() . $q->hr : '' ),
+	  reqform(), $q->hr, 
+	  expform(), $q->hr, 
+	  impform(), $q->hr, 
+	  dispform(), $q->hr,
 	  $q->p( $q->h4("Notes:"), $q->ul( {-id=>"noteslist"},
 	    $q->li([ $q->a({-name=>'note1'}, "") .
 		     "Use the main menu at the top of this page to access the various Handlebar features.",
@@ -580,11 +582,78 @@ sub jumplinks
     #Some quick links to navigate the page
     $q->p(  {-class => 'jumpto'}, 
 	    "Jump to: " .
+      ($ENABLE_PLUGIN ? $q->a({-href=>('#'.bczapspaces(lc(get_plugin_tag())))}, get_plugin_tag()) : '') . 
       $q->a({-href=>'#allocate'}, "Allocate") . 
       $q->a({-href=>'#retrieve'}, "Retrieve") . 
       $q->a({-href=>'#submit'}, "Submit") . 
       $q->a({-href=>'#dispose'}, "Dispose") 
     );
+}
+
+sub pluginform
+{
+my $ios = new IO::String;
+
+    my $pluginlink = 'plugin/' . bczapspaces(lc($ENABLE_PLUGIN)) . '.cgi';
+    
+    load_plugin_pm();
+    print $ios
+	$q->a({-name=>bczapspaces(lc(get_plugin_tag()))}, ''),
+	$q->start_form(-name=>"gotoplugin", -method=>"GET", -action=>$pluginlink),
+	$q->h2( get_plugin_label() );
+
+    #Handle the case where <plugin>.pm can't be read.
+    if(!$_PLUGIN_HANDLE)
+    {
+	print $ios
+	      $q->p("This Handlebar instance includes a custom helper plugin, <b>\"$ENABLE_PLUGIN\"</b>, which
+		     can be used to quickly set up new samples."),
+	      $q->table( {-class => "formtable"},
+		$q->Tr($q->td( {-style=>'padding-left:150px'}, ["", "", ""] )), 
+		$q->Tr($q->td( ["", "", $q->submit( -name=>"gotoplugin", -value=>"Use plugin")] )), 
+	      );
+    }
+    else
+    {
+	print $ios $_PLUGIN_HANDLE->show_summary($q);
+    }
+
+    print $ios $q->end_form;
+
+$ios->str;
+}
+
+sub get_plugin_tag
+{
+    #My new idea is that if the plugin has a $ENABLE_PLUGIN.pm in plugins/
+    #it will be loaded and expected to supply the following methods:
+    # get_tag()
+    # get_label()
+    # show_summary()  - shows the content to be embedded in the front page
+
+    load_plugin_pm();
+    $_PLUGIN_HANDLE ?
+	 $_PLUGIN_HANDLE->get_tag() :
+	 'Generate' ;
+}
+
+
+sub get_plugin_label 
+{
+    load_plugin_pm();
+    $_PLUGIN_HANDLE ?
+	 $_PLUGIN_HANDLE->get_label() :
+	 'Generate barcodes using a helper plugin' ;
+}
+
+sub load_plugin_pm
+{
+    #Here I rely on require ... returning the last value from the eval'd file.
+    #This seems to be semi-documented behaviour.
+    eval{
+	$_PLUGIN_HANDLE = require("plugin/" . bczapspaces(lc($ENABLE_PLUGIN)) . '.pm');
+    } unless $_PLUGIN_HANDLE;
+
 }
 
 sub reqform
@@ -615,7 +684,9 @@ my $ios = new IO::String;
     print $ios
       $q->a({-name=>'allocate'}, ''),
       $q->start_form(-name=>"reqform", -method=>"POST"),
-      $q->h2("Allocate a range of barcodes"),
+      $ENABLE_PLUGIN ? 
+	    $q->h2("Manually allocate a range of barcodes") :
+	    $q->h2("Allocate a range of barcodes"),
       $q->p("You must request a range of barcodes before using them, and say
       what type of item they will be used to label.<br />
       It is better to request too many than too few.  You can request up to $MAX_CODES

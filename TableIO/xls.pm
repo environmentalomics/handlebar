@@ -4,7 +4,7 @@ use strict; use warnings;
 
 package TableIO::xls;
 use base "TableIO::base";
-(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
+(our $VERSION = '2.$Revision: 43 $') =~ y/[0-9.]//cd;
 
 #Get reader and writer from the base package
 sub reader {goto &TableIO::base::reader};

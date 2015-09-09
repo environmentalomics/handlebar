@@ -1,14 +1,21 @@
 Package: bio-linux-handlebar
-Version: 2.2.2-3
+Version: 2.2.3-8
 Section: science
 Priority: optional
 Depends: httpd-cgi, perl, libdbd-pg-perl, libconfig-simple-perl, libio-string-perl, libmailtools-perl, libtext-csv-perl, libdbd-anydata-perl (>= 0.08), debconf (>= 0.2.26), libspreadsheet-parseexcel-perl, libspreadsheet-writeexcel-perl, bio-linux-genquery
 Recommends: postgresql
 Conflicts: bio-linux-barcodebase
 Replaces: bio-linux-barcodebase
-Architecture: i386
+Architecture: all
 Installed-Size: 212
-Maintainer: Tim Booth <tbooth@ceh.ac.uk>
-Description: Handlebar (previously known as BarcodeBase) is a database for storing data about barcodes and acessing the data via a web front-end.
- This package will install the CGI programs necessary to run the barcode database on a Debian/Bio-Linux machine.  If you just want to try the system out then use the demo site (http://envgen.nox.ac.uk/cgi-bin/test_barcode/bc).  If you want to use an existing barcode database then this package is not for you.  It just has the server-side components which are of no use to users.
- The package can attempt a naive configuration of PostgreSQL in order to work out-of-the-box.  You must have a PostgreSQL server installed prior to installing this package or the setup will fail.  After a successful installation point a browser at http://localhost/cgi-bin/handlebar/bc.cgi
+Maintainer: Tim Booth <helpdesk@nebc.nerc.ac.uk>
+Description: Database and web app for logging uniquely barcoded samples
+ This package will install the CGI programs necessary to run the Handlebar 
+ system on a Debian/Bio-Linux machine.  If you just want to try the system
+ out then use the demo site (http://nebc.nerc.ac.uk/cgi-bin/test_barcode/bc).  
+ If you want to use an existing barcode database then this package is not for 
+ you.  It just has the server-side components which are of no use to users.
+ The package can attempt a naive configuration of PostgreSQL in order to work 
+ out-of-the-box.  You must have a PostgreSQL server installed prior to 
+ installing this package or the setup will fail.  After a successful 
+ installation point a browser at http://yourhost/cgi-bin/handlebar/bc.cgi

@@ -102,7 +102,7 @@ our @EXPORT = qw(int_nowarn nsort);
 #Eek - a big nasty list of globals :-(
 our( $MAX_CODES, $CODE_BLOCK_SIZE, $MIN_BAR_CODE, $PREFIX_LENGTH, $POSTFIX_LENGTH, $SPACER_CHAR,
 	 $STYLESHEET, $CUSTOM_FOOTER, $HELP_LINK, $ENABLE_PRINTING, $ENABLE_ADMIN, $ENABLE_REPORTS,
-	 $STRICT_USER_NAMES, $LOG_DIRECTORY, $DATA_SCHEMA, $divs_open,
+	 $STRICT_USER_NAMES, $LOG_DIRECTORY, $DATA_SCHEMA, $COLLECTION_PREFIX, $divs_open,
 	);
 
 sub _setup
@@ -149,10 +149,12 @@ sub _configure
     $ENABLE_REPORTS = $conf->{ENABLE_REPORTS} ? 1 : 0;
     $STRICT_USER_NAMES = $conf->{STRICT_USER_NAMES} ? 1 : 0;
     $LOG_DIRECTORY = $conf->{LOG_DIRECTORY};
+    $COLLECTION_PREFIX = $conf->{COLLECTION_PREFIX};
 
     $conf->{PAGE_DESC} ||= $conf->{PAGE_DESCRIPTION};
 
     $divs_open = 0;
+    1;
 }
 
 #Rather than attempt to prise out all the database interaction into
@@ -196,6 +198,10 @@ sub bclogevent
     my $file_extension = shift;
     my $data = shift;
 
+    #Note that the parameters are not sanitized.  In an earlier version, if someone gave a
+    #user name of foo/../../../bar then handlebar could be tricked into overwriting an arbitrary file.
+    #Filename will now be sanitized.
+
     local $\;
     my $log_counter;
     if($LOG_DIRECTORY)
@@ -232,10 +238,14 @@ sub bclogevent
 
     if($log_counter)
     {
-	my $logfile = "$LOG_DIRECTORY/";
-	$logfile .= sprintf('%06d_%s_%s' , $log_counter, $event_type, $user_name);
+	my $logfile = sprintf('%06d_%s_%s' , $log_counter, $event_type, $user_name);
 	$logfile .= "_$base_code" if $base_code;
 	$logfile .= ($file_extension ? ".$file_extension" : ".log");
+
+	#Sanitize file name
+	$logfile =~ tr/.@a-zA-Z0-9_-/+/c;
+
+	$logfile = "$LOG_DIRECTORY/$logfile";
 
 	eval{
 	    #Flags needed to create file, fail if it existed already and to write to it.
@@ -271,7 +281,7 @@ sub bclogevent
 
 sub import
 {
-    #I had this module automatically reading the config and opening a Db connection, but for
+    #I had this module automatically reading the config and opening a DB connection, but for
     #some uses I want neither of these.
     my $connectnow = 0;
     my @args;
@@ -918,14 +928,14 @@ sub bcrangemembertobase
 sub bcallocate
 {
     #Allocate a block of codes and return the base index
-    my ($quantity, $username, $bctype, $comments) = @_;
+    my ($quantity, $username, $bctype, $comments, $nocommit) = @_;
     $comments ||= "";
 
     #We have a potential race condition in that two invocations of this script
     #could both run at once, get the same value for the $lastbase and
     #thus attempt to allocate conflicting ranges.  The PostgreSQL specific
     #fix is to grab a write-lock before we do anything else
-	#(note - exclusive mode really is a write lock, despite the name):
+    #(note - exclusive mode really is a write lock, despite the name):
     $dbh->do("LOCK barcode_allocation IN EXCLUSIVE MODE");
     
     #Determine next starting base
@@ -936,18 +946,18 @@ sub bcallocate
     #There will be no zero barcode, so the very first allocation
     #returns CODEBLOCKSIZE, or MINBARCODE if set.
     if(! $lastbase){ 
-		$lastbase = $MIN_BAR_CODE || $CODE_BLOCK_SIZE; 
+	$lastbase = $MIN_BAR_CODE || $CODE_BLOCK_SIZE; 
     }
     else
     {
-		#Remember that the last returned value is already allocated.
-		$lastbase++;
+	#Remember that the last returned value is already allocated.
+	$lastbase++;
 
-		if($lastbase % $CODE_BLOCK_SIZE)
-		{
-			#Round-up needed
-			$lastbase += $CODE_BLOCK_SIZE - ($lastbase % $CODE_BLOCK_SIZE);
-		}
+	if($lastbase % $CODE_BLOCK_SIZE)
+	{
+	    #Round-up needed
+	    $lastbase += $CODE_BLOCK_SIZE - ($lastbase % $CODE_BLOCK_SIZE);
+	}
     }
 
     #Log the allocation in the database
@@ -956,11 +966,14 @@ sub bcallocate
 	      values
 	      (?,?,?,?,?)", undef,
 	      $username, $bctype, $lastbase, $lastbase + $quantity - 1, $comments);
-    $dbh->commit();
+
+    #Generally one would commit before logging, but not necessarily for plugins.
+    $dbh->commit() unless $nocommit;
 
     #Log the allocation
     bclogevent( 'alloc', $username, $lastbase, undef,
-		"Allocated $quantity codes of type $bctype to $username beginning with $lastbase."
+		"Allocated $quantity codes of type $bctype to $username beginning with $lastbase" .
+		( $nocommit ? " (not auto-committed!)" : "." )
 	      );
     
     return $lastbase;
@@ -1227,6 +1240,143 @@ sub bcgetcollectionitems
 			      collection_id = $collid order by rank, barcode");
 }
 
+### Now some barcodeUtil stuff which is only relevant to collections...
+sub bcgetcollectionprefix
+{
+    #Decide what prefix I should be using for collections
+    my $prefix = $COLLECTION_PREFIX ||
+		"coll." . substr(bcquote($MIN_BAR_CODE), 0, $PREFIX_LENGTH);
+    $prefix =~ s/\.$//;
+    $prefix;
+}
+
+sub bccreatecollection
+{
+    my ($prefix, $username, $nickname, $comments, @publish) = @_;
+
+    $prefix ||= bcgetcollectionprefix();
+
+    #Could get the database to assign the ID internally.  Usual problem that I then need to
+    #do a read to get the ID back which is a pain.
+    
+    #First get a write lock as below
+    $dbh->do("LOCK barcode_collection IN EXCLUSIVE MODE");
+
+    my ($next_id) = $dbh->selectrow_array("
+	    SELECT max(id) + 1 FROM barcode_collection
+	    ");
+    #Case where the table is empty
+    $next_id ||= 1;
+
+    #And no undefs in the publish array
+    $publish[$_] ||= 0 for (0..2);
+
+    #Log the collection in the database
+    $dbh->do("INSERT INTO barcode_collection
+              (prefix, id, username, nickname, comments, publish_codes, publish_ancestors, publish_descendants)
+		values
+	      (?,?,?,?,?,?,?,?)", undef,
+	    $prefix, $next_id, $username, $nickname, $comments, @publish);
+
+    #Log it
+    bclogevent( 'newcoll', $username, undef, undef,
+		"User $username created a new collection $next_id with " . 
+		defined($nickname) ? "nickname $nickname." : "no nickname."
+	);
+    
+    $next_id;
+}
+
+sub bcupdatecollection
+{
+    #my ($id, $prefix, $username, $nickname, $comments, @publish_*) = @_;
+    my $id = shift;
+
+    #Now need to pad args array to 7
+    $_[6] = $_[6];
+
+    my $rows = $dbh->do("UPDATE barcode_collection SET
+		prefix = coalesce(?, prefix),
+		username = coalesce(?, username),
+		nickname = coalesce(?, nickname),
+		comments = coalesce(?, comments),
+		modification_timestamp = now(),
+		publish_codes = coalesce(?, publish_codes),
+		publish_ancestors = coalesce(?, publish_ancestors),
+		publish_descendants = coalesce(?, publish_descendants)
+	      WHERE id = $id", undef, @_);
+
+    $rows or die "No collection with ID $id.";
+    
+    #Log it
+    bclogevent( 'editcoll', $_[1], "coll$id", undef,
+		"Collection with ID $id was updated:\n" . join("\n", @_));
+}
+
+sub bcappendtocollection
+{
+    my ($collid, $codes) = @_;
+
+    #Adds codes and returns the number added.
+    #Skips any dupes
+    #Dies on a bad code
+    #Need to check that the codes are not in there already and add them to the end.
+
+    my $codescount = scalar(@$codes) or return 0;
+
+    #First get a write lock to make this concurrency-safe
+    $dbh->do("LOCK barcode_collection_item IN EXCLUSIVE MODE");
+
+    #Fetch existing codes for collid
+    my $existing = bcgetcollectionitems($collid);
+
+    #Remove codes found in $existing or duplicate in list
+    my %seen;
+    map {$seen{$_->[0]}++} @$existing;
+    my @remaining = grep {!$seen{$_}++} map {int($_)} @$codes;
+
+    return 0 if !@remaining;
+
+    #Check that all the remaining codes are allocated in the database
+    for(@remaining)
+    {
+	bcrangemembertobase($_) or die "Code ". bcquote($_) . " is not allocated.\n";
+    }
+    my $rank = @$existing ? $existing->[-1]->[1] : 0;
+
+    my $sth = $dbh->prepare("INSERT INTO barcode_collection_item 
+			     (collection_id, barcode, rank) 
+			     VALUES (?, ?, ?)");
+    
+    $sth->execute($collid, $_, ++$rank) for @remaining;
+
+    scalar(@remaining);
+}
+
+sub bcdeletefromcollection
+{
+    my ($collid, $codes) = @_;
+
+    #Will delete all the given codes and report the number of successes.  Codes in the list but not
+    #in the collection will have no effect.
+    $codes and die "Deleting just a subset of codes currently doesn't work!";
+
+    my $deletions = $dbh->do('DELETE FROM barcode_collection_item WHERE collection_id = ?', undef, $collid);
+
+    return $deletions;
+}
+
+sub bcdeletecollection
+{
+    my ($collid) = @_;
+
+    #Expunge a whole collection.  Should I even allow this???
+    $dbh->do("DELETE FROM barcode_collection_item WHERE collection_id = ?", undef, $collid);
+
+    $dbh->do("DELETE FROM barcode_collection WHERE id = ?", undef, $collid) or die
+	"Failed to delete collection with ID $collid.\n";
+}
+
 #Get a summary of codes allocate dby a user.  For the sake of simplicity in the
 #calling script, I'm making this work in an OO-type way.
 sub bcgetblocksforuser
@@ -1320,6 +1470,8 @@ sub render_scrolling_list
     my $self = shift;
     my $params = shift || {};
     
+    #TODO - allow the right row to be selected by default, for exmaple if the user
+    #clicks the print link after allocating.
     $q->scrolling_list( -name => "blocklist",
 			-values=> [reverse(@{$self->{active_blocks}})],
 			-labels=> $self->{blocks},

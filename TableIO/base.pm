@@ -1,9 +1,9 @@
 #!perl
 use strict; use warnings;
 package TableIO::base;
-(our $VERSION = '2.$Revision$') =~ y/[0-9.]//cd;
+(our $VERSION = '2.$Revision: 24 $') =~ y/[0-9.]//cd;
 
-# CVS $Revision$ committed on $Date: 2006/04/24 17:34:40 $ by $Author: tbooth $
+# CVS $Revision: 24 $ committed on $Date: 2006/04/24 17:34:40 $ by $Author: tbooth $
 use Carp;
 
 # CGI::Carp is stealing my errors :-(

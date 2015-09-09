@@ -1,0 +1,6 @@
+barcodes.conf
+*.deb
+*.gz
+*.log
+package/bio-linux-handlebar
+package/handlebar-src

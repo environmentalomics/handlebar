@@ -14,13 +14,14 @@ our $sname = $q->param('sname');
 our $fname = $q->param('fname');
 our $institute = $q->param('institute');
 our $email = $q->param('email');
+our $close_flag = $q->param('c'); $q->delete('c');
 
 my $main = sub
 {
     print bcheader();
 
     print bcstarthtml($PAGE_TITLE),
-	  bcnavbanner(),
+	  ( $close_flag ? $q->start_div({-id=>"topbanner"}) . $q->p(['<br/>']) : bcnavbanner() ),
 	  bch1(($PAGE_DESC ? "$PAGE_DESC - " : "") . "User creation"),
 	  ;
 
@@ -31,8 +32,15 @@ my $main = sub
 	if(createnewuser())
 	{
 	    print $q->p("Thankyou, the username '$sname' has been created for " .
-			$q->escapeHTML($fname) . "."),
-		  $q->p($q->a({-href=>"request_barcodes.cgi"}, "Return to the admin interface."));
+			$q->escapeHTML($fname) . ".");
+	    if(!$close_flag)
+	    {
+		print $q->p($q->a({-href=>"request_barcodes.cgi"}, "Return to the admin interface"));
+	    }
+	    else
+	    {
+		print $q->p($q->a({-href=>"javascript: self.close()"}, "Close this window"));
+	    }
 	}
 	else
 	{
@@ -52,6 +60,7 @@ sub showform
 {
     print $q->h2("Enter details to register a new user"),
 	  $q->start_form(-name=>"newuserform", -method=>"POST"),
+	  $q->hidden( -name => "c", -default => $close_flag ),
 	  $q->table( {-class => "formtable"},
 	    $q->Tr($q->td( ["User name ", $q->textfield(-name=>"sname", -size=>20), "Up to 20 characters."] )),
 	    $q->Tr($q->td( ["Full name ", $q->textfield(-name=>"fname", -size=>40), ""] )),

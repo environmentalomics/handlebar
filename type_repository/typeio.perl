@@ -7,6 +7,8 @@ use warnings;
 use Data::Dumper;
 use Getopt::Std;
 
+use lib '/usr/lib/cgi-bin/handlebar';
+
 # Iterate over all types in the database, and dump them out into specified dir.
 
 my $usage = "  
@@ -17,6 +19,7 @@ my $usage = "
 		 -f(force)            = overwrite existing files when dumping
 		 -h(idden)            = include hidden types
 		 -S <type>, -H <type> = dump only SQL/HTML to STDOUT
+		 -l                   = list all types
 		 -L <file>            = load SQL file into DB
 		 -k                   = always keep old table definition
 		 -H <file>            = convert SQL to HTML (requires DB connection)
@@ -29,8 +32,8 @@ my $usage = "
 
 #Add flag to include/exclude hidden types.
 #Need optarg to do that properly
-our ($opt_k, $opt_f, $opt_h, $opt_S, $opt_H, $opt_L, $opt_D, $opt_F);
-getopts('kfhD:S:H:L:F:');
+our ($opt_k, $opt_f, $opt_h, $opt_S, $opt_H, $opt_L, $opt_D, $opt_F, $opt_l);
+getopts('kfhD:S:lH:L:F:');
 
 use lib ".."; #Hack
 use barcodeUtil;
@@ -85,8 +88,34 @@ if($opt_F)
     $mode = 'flush';
     $types_filter = [split /,/, $opt_F];
 }
+if($opt_l)
+{
+    !$mode or die "Usage: $usage";
+    $mode = 'list';
+}
 
 $mode or die "Usage: $usage";
+
+sub get_a_connection
+{
+    #OK, so I firstly wrote this scritp assuming that I'd always be able to
+    #connect to the Handlebar database using the user name and password found
+    #in ./barcodes.conf.  But of course we might be using IDENT authentication, as
+    #is the default in the package, or there could be a situation where access with
+    #these parameters is host restricted.  This is not a perfect fix, but as a workaround
+    #if the password is blank then also blank the user name.
+
+    my %newconf = %{bcgetconfig()};
+    if($ENV{PGUSER} || !$newconf{DATABASE_PASS})
+    {
+	print "Ignoring login credentials in barcodes.conf - either no password in file or \$PGUSER is set.\n";
+
+	$newconf{DATABASE_USER} = undef;
+	$newconf{DATABASE_PASS} = undef;
+    }
+
+    barcodeUtil::connectnow(\%newconf);
+}
 
 our %SUBS;
 #First deal with dump mode
@@ -101,7 +130,7 @@ $SUBS{dump} = sub {
 	mkdir $target_dir or die "Could not make directory $target_dir";
     }
 
-    barcodeUtil::connectnow();
+    get_a_connection();
 
     #get types
     #sort list (no need - already sorted)
@@ -165,7 +194,7 @@ $SUBS{dump} = sub {
 #This one is easy
 $SUBS{sqlout} = sub{
     
-    barcodeUtil::connectnow();
+    get_a_connection();
 
     #get types
     #sort list (no need - already sorted)
@@ -185,7 +214,7 @@ $SUBS{sqlout} = sub{
 $SUBS{htmlout} = sub{
 
     #The easy version, virtually identical to above.
-    barcodeUtil::connectnow();
+    get_a_connection();
 
     #get types
     #sort list (no need - already sorted)
@@ -216,13 +245,26 @@ $SUBS{htmlout_file} = sub{
     -r $template_file or die "Cannot open $template_file for reading";
 
     #connect with default params
-    barcodeUtil::connectnow();
+    get_a_connection();
 
     #load into temporary table
     #create temporary barcode_description and load descriptions
     #export to stdout
     #drop table
     
+};
+
+$SUBS{list} = sub{
+    #List the templates in the database, indicating hidden ones with '###'
+
+    get_a_connection();
+
+    my @alltypes = @{bcgetbctypes()};
+
+    for(@alltypes) 
+    {
+	print $_, bcgetflagsforfield($_)->{hide} ? " ###\n" : "\n";
+    }
 };
 
 $SUBS{load} = sub{
@@ -242,7 +284,7 @@ $SUBS{load} = sub{
 
     #I need to connect to extract the connection parameters, and I'll
     #use the connection to see if there is any existing data for a type.
-    barcodeUtil::connectnow();
+    get_a_connection();
     my $conn_params = bcgetdbobj()->grab_connection_params();
     my $dbh =  bcgetdbobj()->get_handle();
     $dbh->{PrintError} = $dbh->{PrintWarn} = 0;
@@ -251,10 +293,10 @@ $SUBS{load} = sub{
       local $ENV{PGPORT} = $conn_params->{dbport} if $conn_params->{dbport};
       local $ENV{PGDATABASE} = $conn_params->{dbname};
 
-      my $search_path = "\"$conn_params->{dbschema}\"";
-      $search_path .= ", \"$conn_params->{sysschema}\"" if $conn_params->{sysschema};
+      my $search_path = '"' . ($conn_params->{dbschema} || 'data') . '"';
+      $search_path .= ', "' . ($conn_params->{sysschema} || 'public') . '"';
       $search_path .= ", pg_catalog";
-      my $user_account =  $conn_params->{dbuser}; #Needed to grant permissions
+      my $user_account = bcgetconfig()->{DATABASE_USER}; #Needed to grant permissions
 
         #PGUSER set by user, PGPASSWORD may be prompted for
 	my @allcommands;
@@ -323,6 +365,7 @@ $SUBS{load} = sub{
 	    }
 
 	    #Now modify the file to be loadable
+	    my $grants_inserted = 0;
 	    for(@commands)
 	    {
 		#Inheritance check
@@ -349,7 +392,17 @@ $SUBS{load} = sub{
 		s/^(SET search_path = ).*/${1}${search_path};/;
 		#Backup is redundant if !$table_exists, but harmless.
 		s/^(UPDATE "?barcode_description"? SET typename = ')$oldbackupname(')/${1}${backupname}$2/;
-		s/^(GRANT ALL ON TABLE "?$typetable"? TO ).*/${1}"${user_account}";/;
+
+		#Ignore all the grants and revokes.  What we want is to grant access to $user_account and revoke
+		#from public. (Do I need to grant to myself? Not if I never revoke it!)
+#		s/^(GRANT ALL ON TABLE "?$typetable"? TO ).*/${1}"${user_account}";/;
+		if(s/^((?:GRANT|REVOKE).*)/-- $1/ && !$grants_inserted++)
+		{
+		    s/$/--grant access only to current user + configured user\n/;
+		    s/$/REVOKE ALL ON TABLE "$typetable" FROM PUBLIC;\n/;
+		    s/$/GRANT ALL ON TABLE "$typetable" TO "$user_account";\n/;
+		    s/$/\n/;
+		}
 
 		if($keep || !$table_exists)
 		{
@@ -391,7 +444,7 @@ $SUBS{flush} = sub{
     #Remove references to a backup of an old table.
     #Need admin access ot the database, like for loading
     #connection not actually used -  we'll invoke psql directly.
-    barcodeUtil::connectnow();
+    get_a_connection();
     my $conn_params = bcgetdbobj()->grab_connection_params();
 
     { local $ENV{PGHOST} = $conn_params->{dbhost} if $conn_params->{dbhost};
