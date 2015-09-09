@@ -1,18 +1,18 @@
 # Handlebar
 
-==Introduction==
+## Introduction
 
-This is the user guide for the barcode database.  If you are going to be adding information to the database then you must at least be familiar with the material in this introductory section.  The web interface is designed to be largely self-documenting, so once you understand the basic operation of the system you can just go ahead and try it out.
+Handlebar is a database for tracking your barcoded samples.  If you are going to be adding information to an existing database then you must at least be familiar with the material in this introductory section.  The web interface is designed to be largely self-documenting, so once you understand the basic operation of the system you can just go ahead and try it out.
 
 NOTE: As with any database, one of the most important aspects is making sure that the data entered is consistent and complete.  The database will do some basic checking of the information you submit, but it is vital that you are familiar with the conventions and standards for the items you are labelling.  These will be specific to the different groups and different sample types, so they are outside the scope of this document.  Such usage information can be stored as comments in the database and viewed via the website - see the section '''barcode types''' below for more details.
 
-===Basic Principles===
+## Basic Principles
 
 The fundamental principle of the online database is that stored items are given a unique number, and that information relating to the sample is entered into a spreadsheet against that number.  The database then ingests this information so that it can be shared by multiple users, and across multiple sites.  As all the sample information related to a project accumulates, searching and reporting is possible.  Once a project is completed, sets of sample data can be published - that is, the information on the codes is made publicly available.
 
 The online database is not dependent on the use of any specific barcoding hardware.  It is perfectly possibly, though tedious, to hand-write the code numbers onto the stored samples.  Any printing system capable of outputting numbered codes is suitable for use with the barcode database, but we do support a standard set of hardware and this is detailed below.
 
-===Barcode Blocks, Users and Barcode Types===
+## Barcode Blocks, Users and Barcode Types
 
 Barcodes are allocated by the system in blocks of up to 1000.  The reason for the allocation step is to make sure that all code numbers are unique over different sites.  Allocating a block of codes does not mean that you have to actaully use any or all of them.  It simply means they are available for use.  When you download a spreadsheet from the system to edit the information, you will download a block at a time.
 
@@ -20,7 +20,7 @@ The database knows about users of the system.  Each user is identified by a shor
 
 The database also knows about various types of things which may be barcoded.  The type associated with a barcode determines what fields will be available in the spreadsheet when you come to enter data. Each barcode block is given a type at the time of allocation.
 
-===Barcode Lifecycle===
+## Barcode Lifecycle
 
 The lifecycle of a barcode in the system is as follows:
 
@@ -30,43 +30,43 @@ The lifecycle of a barcode in the system is as follows:
 1. The barcode information may be updated by editing and re-uploading the CSV.
 1. If the item is destroyed then barcode can marked disposed in the database.  After this it can no longer be updated.
 
-1. It is also possibly, though not necessary, to dispose an allocated but unused barcode.  This simply tells the database that the code will never be used.
+* It is also possibly, though not necessary, to dispose an allocated but unused barcode.  This simply tells the database that the code will never be used.
 
 Importantly, a code cannot go backwards (eg. once a code is allocated it cannot be de-allocated, once disposed it cannot be reinstated) without intervention by the database administrator.
 
 The database can also be thought of as having a lifecycle:
 
-#Development phase, where type definitions are being added and tested.  This will be done within a test database setup.
-#Active phase, where users are storing samples and adding information.
-#Archive phase, where the information is archived and no longer updated.  Ranges of barcodes can be selected for publication and the information will be made available via EnvBase.
+1. Development phase, where type definitions are being added and tested.  This will be done within a test database setup.
+1. Active phase, where users are storing samples and adding information.
+1. Archive phase, where the information is archived and no longer updated.  Ranges of barcodes can be selected for publication and the information will be made available via EnvBase.
 
-===Security and User Names===
+## Security and User Names
 
 Usernames are not password protected, as it is assumed that everyone who is given access to the system can be trusted. Once you have access to the system you can impersonate any other user, but obviously you should only do this if you are entering data on their behalf.  In order to prevent you from accidentally changing another user's data you will always be asked to identify yourself before making any update on the system.
 
-===Wasting Codes===
+## Wasting Codes
 
 Users should not think in terms of codes being 'wasted' if they are allocated but then never used.  Within reason, there is no shortage of numbers to go around even if only a fraction of them are actually used for labelling.  If, say, you think you may get up to 300 sediment samples over the course of two years, in batches of 50, then allocate yourself a block of 300 codes at the start, rather than 50 at a time.  You will probably find the system easier to use this way, as all your records will be together in one spreadsheet.
 
 Wasting of physical labels is another matter, of course.  You can print or request these as you see fit.
 
-===Breaking the Rules and Correcting Mistakes===
+## Breaking the Rules and Correcting Mistakes
 
-The web interface intentionally limits what a user is able to do.  This is partly for the sake of simplicity and partly to maintain the integrity of the data within the database.  If you need to make a change which the interface does not support, for example to correct a mistake, please contact the NEBC to get the change made by a database administrator.  This includes thinks like undoing disposals, correcting comments on allocation blocks, altering information on existing users and any change to allocation blocks.  The ability to change ownership of codes via the web interface is a feature which may be added in a future release.
+The web interface intentionally limits what a user is able to do.  This is partly for the sake of simplicity and partly to maintain the integrity of the data within the database.  An admin_barcodes.cgi module is provided for when you need to make changes outside the normal lifecyle.  The system administrator can configure which features are available in this interface.
 
-==Getting Started==
+## Getting Started
 
-To access the website you will need to know the URL and password for the database you are using.  Once you have read the above section and been given access to the website you are ready to use the system.  You must first register your user name, giving your real name and your institution.  The user name should be short and contain only lowercase letters and numbers.  I simply use my login name for the CEH systems, ie. 'tbooth'.
+To access the website you will need to know the URL and password for the database you are using.  Once you have read the above section and been given access to the website you are ready to use the system.  You must first register your user name, giving your real name and your institution.  The user name should be short and contain only lowercase letters and numbers.  I simply use my regular login name, ie. 'tbooth'.
 
-You need to decide what type of thing you want to barcode and how many barcodes you want to allocate in a block.  If none of the [[BarcodeItemTypes|existing types]] are suitable, then a new type must be added.  The fields for the new type need to be considered carefully, and the description needs to be added to the database by the system administrator, so please contact the NEBC with the details.
+You need to decide what type of thing you want to barcode and how many barcodes you want to allocate in a block.  If none of the [[BarcodeItemTypes|existing types]] are suitable, then a new type must be added.  The fields for the new type need to be considered carefully, and the description needs to be added to the database by the system administrator.
 
 In addition to a computer with an internet connection and a web browser you also need a spreadsheet program to edit the CSV files with the data in.  OpenOffice.org Calc is the preferred spreadsheet, and helper macros are avaialbel for it (see below).  Excel, Gnumeric and any other spreadsheet capable of loading CSV files will also work fine.
 
 Follow the prompts on the site to download the CSV file, then upload it again when you have data to submit.
 
-==Detailed Notes==
+# Detailed Notes
 
-===Code Allocations===
+## Code Allocations
 
 The database currently issues 8-digit codes which are shown in the form 00-001234.  The 8-digit size is because this size of code fits neatly on the side of an Eppendorf tube, it is not a fundamental feature of the database; the format of the codes is controlled by the configuration file on the server.  The database will allocate codes according to the following rules:
 
@@ -76,13 +76,13 @@ The database currently issues 8-digit codes which are shown in the form 00-00123
 
 Codes which slip between blocks will simply go unused.  Codes are allocated in strict order, and once the allocation is made the type and size of the block should not be changed (this can only be done by the database administrator in any case).
 
-===Type Descriptions===
+## Type Descriptions
 
-Detailed information is given on the [[BarcodeItemTypes]] page.  In summary, to get a description of each type, click <u>Describe type</u>.  You will see a summary description and a table in which each row represents a heading in the spreadsheet.  Bold fields are compulsory, so if you enter any data at all for the barcode then you must fill in at least these columns.  The maximum size of the field is also given; for text fields this is the number of characters (blank for unlimited) and for numeric fields this is the number of bytes of storage, so an integer of size 4 can range from -2,147,483,648 to -2,147,483,647.  For floating point fields, the size determines the maximum precision available, rather than the size of the values.
+Detailed information is given on the [[BarcodeItemTypes]] page.  In summary, to get a description of each type, click _Describe type_.  You will see a summary description and a table in which each row represents a heading in the spreadsheet.  Bold fields are compulsory, so if you enter any data at all for the barcode then you must fill in at least these columns.  The maximum size of the field is also given; for text fields this is the number of characters (blank for unlimited) and for numeric fields this is the number of bytes of storage, so an integer of size 4 can range from -2,147,483,648 to -2,147,483,647.  For floating point fields, the size determines the maximum precision available, rather than the size of the values.
 
-===CSV Download, Data Upload and Validation===
+## CSV Download, Data Upload and Validation
 
-Once you have created a block of barcodes, you can download a CSV file to be loaded straight into a spreadsheet.  You will need to use the text import function and check that the separator is set to a comma and the text quotation is set to a double quote.  When you first load a CSV file for a new block of codes you will see the codes down the left hand column and the headings at the top.
+Once you have created a block of barcodes, you can download a CSV or XLS file to be loaded straight into a spreadsheet.  You will need to use the text import function and check that the separator is set to a comma and the text quotation is set to a double quote.  When you first load a CSV file for a new block of codes you will see the codes down the left hand column and the headings at the top.
 
 Enter the details of the samples into the spreadsheet, referring to the type description to see what values are expected in each column and which fields are compulsory, then upload the data back to the site.  The input will be validated against the database, and only if every row validates correctly will the data be uploaded.  If any validation fails then no changes will be made in the database at all, and an error report will be shown.  You should try to correct the problem and re-submit the file.
 
@@ -105,9 +105,9 @@ Some notes on the validation process:
 * You can have blank rows in the spreadsheet, but if you put data in any cell outside the barcode data area then this will trigger an error.
 * Sometimes you may see a validation error which is propogated from the underlying database.  The wording of these can be a little technical, but it is not possible to translate every database error.
 
-You can re-request and re-submit the CSV file as often as you like.
+You can re-request and re-submit the spreadsheet file as often as you like.
 
-===Disposing Codes===
+## Disposing Code
 
 Disposing a code indicates that you have physically destroyed the sample in question.  Disposing the code lets people know that the sample is no longer available and also removes the codes from the CSV download.  The code will no longer show in the tally of codes owned by the user.  Once a whole block has been disposed the entire block will be hidden in the admin interface.  You can also dispose codes which are still unused - this is only really useful if you want to dispose of an entire block where some codes are unused.
 
@@ -120,15 +120,15 @@ You can dispose of whole ranges of codes at once by using colon-separated ranges
 
 Please be careful when doing this that you do not dispose of more than you meant to.
 
-===User Names and Validation===
+## User Names and Validation
 
 There is a configuration option which controls if strict username checking is enabled on the site.  As stated before, the system will believe that you are any user you claim to be.  The point of prompting for a user name is to stop one user unwittingly altering or disposing codes belonging to another.  If strict username checking is turned off, users will be able to dispose of codes and upload data without giving a user name first.
 
-===The Query Interface===
+## The Query Interface
 
 The current query interface supports basic queries or full reports (via GenQuery).  Enter a barcode (with or without the hyphen character) to see a summary of data.  Or select a report from the menus.
 
-===The Printing Interface===
+## The Printing Interface
 
 If you want to make labels for your samples, you can mail the sire maintainer to request some or print them on your own printer.  The web interface can help you in two ways:
 
