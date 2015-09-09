@@ -1,3 +1,5 @@
+# Handlebar
+
 ==Introduction==
 
 This is the user guide for the barcode database.  If you are going to be adding information to the database then you must at least be familiar with the material in this introductory section.  The web interface is designed to be largely self-documenting, so once you understand the basic operation of the system you can just go ahead and try it out.
@@ -22,13 +24,13 @@ The database also knows about various types of things which may be barcoded.  Th
 
 The lifecycle of a barcode in the system is as follows:
 
-#Anything higher than the current highest allocated number is a potential barcode, waiting to be claimed by a user.
-#When a barcode is allocated it becomes associated with a user and an item type as part of an allocation block.  At this point no other information is entered, and the barcode may never actually be used.  It is simply available for use.
-#The system knows the barcode has been used when data about it is uploaded (via a spreadsheet CSV file).
-#The barcode information may be updated by editing and re-uploading the CSV.
-#If the item is destroyed then barcode can marked disposed in the database.  After this it can no longer be updated.
+1. Anything higher than the current highest allocated number is a potential barcode, waiting to be claimed by a user.
+1. When a barcode is allocated it becomes associated with a user and an item type as part of an allocation block.  At this point no other information is entered, and the barcode may never actually be used.  It is simply available for use.
+1. The system knows the barcode has been used when data about it is uploaded (via a spreadsheet CSV file).
+1. The barcode information may be updated by editing and re-uploading the CSV.
+1. If the item is destroyed then barcode can marked disposed in the database.  After this it can no longer be updated.
 
-#It is also possibly, though not necessary, to dispose an allocated but unused barcode.  This simply tells the database that the code will never be used.
+1. It is also possibly, though not necessary, to dispose an allocated but unused barcode.  This simply tells the database that the code will never be used.
 
 Importantly, a code cannot go backwards (eg. once a code is allocated it cannot be de-allocated, once disposed it cannot be reinstated) without intervention by the database administrator.
 
@@ -68,9 +70,9 @@ Follow the prompts on the site to download the CSV file, then upload it again wh
 
 The database currently issues 8-digit codes which are shown in the form 00-001234.  The 8-digit size is because this size of code fits neatly on the side of an Eppendorf tube, it is not a fundamental feature of the database; the format of the codes is controlled by the configuration file on the server.  The database will allocate codes according to the following rules:
 
-#The block must not be larger than the maximum size specified in the config.
-#If there are no codes in the database yet, the starting code will be taken from the config file.  By using a different offset for each database (eg 2000000 for the Fish Tox. codes) the codes are kept unique across all projects.
-#The highest allocated code will be determined, then 1 is added to this.  Finally the figure is rounded up to the nearest 100 (or whatever is set in the config file) and this becomes the base for the next allocation block.
+1. The block must not be larger than the maximum size specified in the config.
+1. If there are no codes in the database yet, the starting code will be taken from the config file.  By using a different offset for each database (eg 2000000 for the Fish Tox. codes) the codes are kept unique across all projects.
+1. The highest allocated code will be determined, then 1 is added to this.  Finally the figure is rounded up to the nearest 100 (or whatever is set in the config file) and this becomes the base for the next allocation block.
 
 Codes which slip between blocks will simply go unused.  Codes are allocated in strict order, and once the allocation is made the type and size of the block should not be changed (this can only be done by the database administrator in any case).
 
@@ -86,22 +88,22 @@ Enter the details of the samples into the spreadsheet, referring to the type des
 
 Typical problems are:
 
-*You have not filled in a compulsory field.
-*You have put text in a numeric field.
-*A text entry is too long.
-*A value in a date column cannot be interpreted.  The recommended format for dates is to say, eg. '12 Jan 2005'.  Dates in the form '12/01/2005' should be avoided as they are ambiguous - many people have their spreadsheets set to the default American style mm/dd/yyyy ordering.
-*There is some extra data in the file which cannot be processed.
+* You have not filled in a compulsory field.
+* You have put text in a numeric field.
+* A text entry is too long.
+* A value in a date column cannot be interpreted.  The recommended format for dates is to say, eg. '12 Jan 2005'.  Dates in the form '12/01/2005' should be avoided as they are ambiguous - many people have their spreadsheets set to the default American style mm/dd/yyyy ordering.
+* There is some extra data in the file which cannot be processed.
 
 Some notes on the validation process:
 
-*You can re-order the rows and columns in the spreadsheet, and the database will deal with this.
-*You do not have to use the whole block at once, nor do you have to use up the codes in order.
-*You can delete rows you are not using from the spreadsheet, and just upload a subset of the block.
-*But you cannot combine two blocks into one spreadsheet and upload the whole lot at once.
-*If a row in the spreadsheet contains just a barcode, and the barcode is unused it will be skipped.
-*But if the row contains just a barcode and there is data for that code already in the database an error will be triggered.
-*You can have blank rows in the spreadsheet, but if you put data in any cell outside the barcode data area then this will trigger an error.
-*Sometimes you may see a validation error which is propogated from the underlying database.  The wording of these can be a little technical, but it is not possible to translate every database error.
+* You can re-order the rows and columns in the spreadsheet, and the database will deal with this.
+* You do not have to use the whole block at once, nor do you have to use up the codes in order.
+* You can delete rows you are not using from the spreadsheet, and just upload a subset of the block.
+* But you cannot combine two blocks into one spreadsheet and upload the whole lot at once.
+* If a row in the spreadsheet contains just a barcode, and the barcode is unused it will be skipped.
+* But if the row contains just a barcode and there is data for that code already in the database an error will be triggered.
+* You can have blank rows in the spreadsheet, but if you put data in any cell outside the barcode data area then this will trigger an error.
+* Sometimes you may see a validation error which is propogated from the underlying database.  The wording of these can be a little technical, but it is not possible to translate every database error.
 
 You can re-request and re-submit the CSV file as often as you like.
 
@@ -124,18 +126,14 @@ There is a configuration option which controls if strict username checking is en
 
 ===The Query Interface===
 
-The current query interface is a basic lookup form.  Enter a barcode (with or without the hyphen character) to see a summary of data.  The query interface is due to be beefed up as follows:
-
-#A reporting interface will allow summaries to be generated with various possibly queries.
-#A power-query interface will be set up to query across both barcode databases.  This will only be accessible to certain users like staff at the NERC core facilities.
-#There will probably be data export facilities added as required.  There may be a case for an option where you can download a snapshot of the entire database and query it offline.
+The current query interface supports basic queries or full reports (via GenQuery).  Enter a barcode (with or without the hyphen character) to see a summary of data.  Or select a report from the menus.
 
 ===The Printing Interface===
 
-If you want to make labels for your samples, you can mail the NEBC to request some or print them on your own printer.  The web interface can help you in two ways:
+If you want to make labels for your samples, you can mail the sire maintainer to request some or print them on your own printer.  The web interface can help you in two ways:
 
-#By generating an EPL file which you can feed directly to a Zebra barcode printer.
-#By generating a standard e-mail which goes off to the NEBC.
+1. By generating an EPL file which you can feed directly to a Zebra barcode printer.
+1. By generating a standard e-mail which goes off to the sire maintainer.
 
 The web interface will validate the codes against the database, and will insist that codes are allocated to you before you print or request them.  The printing interface is there for convenience only; if you want to make use of the software supplied with the printer to design your own labels then go ahead.  Note that the website does not control the printer directly, it just generates a suitable EPL data file for you to print yourself.  You will see on-screen instructions for how to do this.
 
