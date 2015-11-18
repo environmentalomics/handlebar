@@ -12,6 +12,7 @@ CREATE USER "www-data";
 --
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -29,6 +30,7 @@ ALTER DATABASE handlebar OWNER TO postgres;
 \connect handlebar
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -149,7 +151,13 @@ SET search_path = genquery, pg_catalog;
 --
 
 CREATE VIEW count_active_by_block AS
-    SELECT ba.fromcode, count(g.barcode) AS active FROM (handlebar_sys.barcode_allocation ba LEFT JOIN handlebar_data.generic g ON ((((g.barcode >= ba.fromcode) AND (g.barcode <= ba.tocode)) AND (NOT (EXISTS (SELECT d.barcode FROM handlebar_sys.barcode_deletion d WHERE (d.barcode = g.barcode))))))) GROUP BY ba.username, ba.fromcode;
+ SELECT ba.fromcode,
+    count(g.barcode) AS active
+   FROM (handlebar_sys.barcode_allocation ba
+     LEFT JOIN handlebar_data.generic g ON ((((g.barcode >= ba.fromcode) AND (g.barcode <= ba.tocode)) AND (NOT (EXISTS ( SELECT d.barcode
+           FROM handlebar_sys.barcode_deletion d
+          WHERE (d.barcode = g.barcode)))))))
+  GROUP BY ba.username, ba.fromcode;
 
 
 ALTER TABLE genquery.count_active_by_block OWNER TO postgres;
@@ -159,7 +167,11 @@ ALTER TABLE genquery.count_active_by_block OWNER TO postgres;
 --
 
 CREATE VIEW count_disposals_by_block AS
-    SELECT ba.fromcode, count(d.barcode) AS disposed FROM (handlebar_sys.barcode_allocation ba LEFT JOIN handlebar_sys.barcode_deletion d ON (((d.barcode >= ba.fromcode) AND (d.barcode <= ba.tocode)))) GROUP BY ba.username, ba.fromcode;
+ SELECT ba.fromcode,
+    count(d.barcode) AS disposed
+   FROM (handlebar_sys.barcode_allocation ba
+     LEFT JOIN handlebar_sys.barcode_deletion d ON (((d.barcode >= ba.fromcode) AND (d.barcode <= ba.tocode))))
+  GROUP BY ba.username, ba.fromcode;
 
 
 ALTER TABLE genquery.count_disposals_by_block OWNER TO postgres;
@@ -169,7 +181,11 @@ ALTER TABLE genquery.count_disposals_by_block OWNER TO postgres;
 --
 
 CREATE VIEW count_used_by_block AS
-    SELECT ba.fromcode, count(g.barcode) AS used FROM (handlebar_sys.barcode_allocation ba LEFT JOIN handlebar_data.generic g ON (((g.barcode >= ba.fromcode) AND (g.barcode <= ba.tocode)))) GROUP BY ba.username, ba.fromcode;
+ SELECT ba.fromcode,
+    count(g.barcode) AS used
+   FROM (handlebar_sys.barcode_allocation ba
+     LEFT JOIN handlebar_data.generic g ON (((g.barcode >= ba.fromcode) AND (g.barcode <= ba.tocode))))
+  GROUP BY ba.username, ba.fromcode;
 
 
 ALTER TABLE genquery.count_used_by_block OWNER TO postgres;
@@ -1189,6 +1205,7 @@ GRANT SELECT,INSERT,UPDATE ON TABLE barcode_user TO "www-data";
 --
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -1332,6 +1349,7 @@ INSERT INTO barcode_description (typename, columnname, notes) VALUES ('pcr_produ
 --
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -1561,6 +1579,7 @@ INSERT INTO query_def (query_id, title, category, long_label, hide, icon_index, 
 --
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;

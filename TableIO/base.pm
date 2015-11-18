@@ -66,13 +66,13 @@ sub new
     {
 	die "$class is an abstract class.  You may not instantiate it.  Got that?\n";
     }
-    
+
     bless $this => $class;
-    
+
     if(@_)
     {
 	#Reader mode
-	$this->{reader} = 1;	
+	$this->{reader} = 1;
 	$this->{fh} = shift() and $this->start_read();
     }
     else
@@ -276,8 +276,8 @@ sub print_out
 
     #How it should work
 #     my $fh = shift || \*STDOUT;
-# 
-#     print $fh $this->as_string(); 
+#
+#     print $fh $this->as_string();
 }
 
 sub as_string
@@ -290,8 +290,8 @@ sub as_string
     #How it could work if you already had print_out sorted
 #     my $buf;
 #     my $fh = new IO::String($buf);
-# 
-#     $this->print_out($fh); 
+#
+#     $this->print_out($fh);
 #     $buf;
 }
 
@@ -365,7 +365,7 @@ sub find_barcode_column
 {
     #Utility job - seems to belong here.
     reader(my $this = shift);
-    
+
     my $headings = $this->get_column_names();
     my $bcfound;
     for(my $nn = 0; $nn < @$headings; $nn++)

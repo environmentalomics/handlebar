@@ -7,9 +7,6 @@ use strict; use warnings;
 #The stub CGI application.  Locations need to be set here explicitly to
 #bootstrap finding the config file and modules.
 
-#FIXME - this should not be in the released code!
-use lib '/home/tbooth/sandbox/genquery/new';
-
 use barcodeUtil;
 
 my $params = {config_data => make_config(),

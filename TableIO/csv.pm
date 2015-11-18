@@ -79,7 +79,7 @@ sub start_read
 	elsif(!$datafound) { $datafound++; }
 	else		   { last; }
     }
-    
+
     #Remove anything which begins with comment markers
     @fhrows = grep {$_ && !/^["]?[>#]/} @fhrows;
 
