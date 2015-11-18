@@ -26,7 +26,7 @@ use constant file_extension => "csv";
 
 use DBI;
 require DBD::AnyData;
-use Text::CSV_XS;
+use Text::CSV;
 use IO::String;
 { package IO::String; sub str{${shift()->string_ref }} }
 
@@ -42,10 +42,10 @@ if(DBD::AnyData->VERSION eq '0.08')
   ';
 }
 
-{ my $csv=Text::CSV_XS->new( {binary=>0,eol=>"\n"} );
+{ my $csv=Text::CSV->new( {binary=>0,eol=>"\n"} );
 sub combine
 {
-    #Wraps the combine() from Text::CSV_XS
+    #Wraps the combine() from Text::CSV
     for(@_)
     {
 	#Scrub newlines, tabs

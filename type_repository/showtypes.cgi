@@ -68,8 +68,8 @@ for(@types)
     my $typedesc = $cache->get("$typename.html");
     if(!defined($typedesc))
     {
-	#open my $typedesc_fh, "$SVNCLIENT cat $SVNROOT/$typename.html |" or die $!;	
-	open my $typedesc_fh, "wget -q -O - $SVNBROWSE/$typename.html |" or die $!;	
+	#open my $typedesc_fh, "$SVNCLIENT cat $SVNROOT/$typename.html |" or die $!;
+	open my $typedesc_fh, "wget -q -O - $SVNBROWSE/$typename.html |" or die $!;
 	$typedesc = join('', <$typedesc_fh>) || '';
 	close $typedesc_fh;
 	#If nothing came back, save an empty string in the cache so we don't keep
@@ -119,14 +119,14 @@ for(@types)
     print $q->p( $q->a({-href => "$SVNBROWSE/$typename.sql"}, "Download SQL"), ' / ',
 		 $q->a({-href => "$SVNBROWSE/$typename.sql?view=log"}, "View file history")
 	       );
-	  
+
 }
 
 #add a form to submit types by asking for the .sql file and mailing it to me
 #link to submit script here
 
 print $q->h2("Adding or updating types"),
-		$q->p("If you have defined your own type templates, you may use " . 
+		$q->p("If you have defined your own type templates, you may use " .
 			$q->a({-href=>'submit_a_type.cgi'}, "this form ") .
 			"to submit them to the repository for others to use.");
 
@@ -140,7 +140,7 @@ sub repo_navbanner
 
     #Equivalent of the internal navigation banner for the repository.
     my @sections = (
-        { href=>"http://nebc.nox.ac.uk/tools/handlebar", label=>"Handlebar home page" },
+        { href=>"http://nebc.nerc.ac.uk/tools/handlebar", label=>"Handlebar home page" },
         { href=>"showtypes.cgi",   label=>"Browse templates" },
         { href=>"submit_a_type.cgi",   label=>"Submit a template" },
     );
