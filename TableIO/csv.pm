@@ -25,22 +25,12 @@ use constant file_extension => "csv";
 # Should still permit rearrangement of columns, though.
 
 use DBI;
-require DBD::AnyData;
+use Data::Dumper;
 use Text::CSV;
 use IO::String;
+use IO::Wrap;
 { package IO::String; sub str{${shift()->string_ref }} }
 
-#Massive kludge for DBD::AnyData
-if(DBD::AnyData->VERSION eq '0.08')
-{ eval
-  '
-    package DBD::AnyData::st;
-    no warnings;
-
-    sub DESTROY ($) { $_[0]->SUPER::DESTROY(@_) }
-    sub finish ($) { $_[0]->SUPER::finish(@_) }
-  ';
-}
 
 { my $csv=Text::CSV->new( {binary=>0,eol=>"\n"} );
 sub combine
@@ -62,47 +52,40 @@ sub start_read
 {
     reader(my $this = shift);
 
-    #Slurp up the file.
-    my $fh = $this->{fh};
-    my @fhrows = <$fh>;
+    #Slurp up the file using Text::CSV
+    my $csv_r = Text::CSV->new ({ binary => 1 }) or die "Cannot use CSV: ".Text::CSV->error_diag();
+    my @allrows = ();
+
+    #Start silly trickery, not needed with CGI > 4.05
+    my $fh_orig_type = ref($this->{fh});
+    my $wrapped_fh = bless $this->{fh}, "FileHandle";
+    $wrapped_fh = wraphandle($wrapped_fh);
+    bless $this->{fh}, $fh_orig_type;
+    #End silliness
+
+    while ( my $row = $csv_r->getline( $wrapped_fh ) ) {
+	    push @allrows, $row;
+    }
+    $this->{allrows} = \@allrows;
 
     #Remove junk at the top
-    for(@fhrows)
+    for(@allrows)
     {
-	my $datafound = 0;
 	#See if this row is the header
-	if( /^["]?[>#]/ )
+	if( $_->[0] =~ /^[>#]/ )
 	{
-	    $this->{header} = $_ unless $this->{header};
+	    $this->{header} = combine($_);
+	    last;
 	}
-	elsif(/^,/)	   { s/^/#/; }
-	elsif(!$datafound) { $datafound++; }
-	else		   { last; }
     }
 
     #Remove anything which begins with comment markers
-    @fhrows = grep {$_ && !/^["]?[>#]/} @fhrows;
+    @allrows = grep {$_->[0] && $_->[0] !~ /^["]?[>#]/} @allrows;
 
-    #Load the thing into DBD::AnyData
-    my $addbh = DBI->connect('dbi:AnyData(RaiseError=>1):');
-    $addbh->{Taint} = 1;
-
-    eval{$addbh->func('csvimport', 'CSV',  \@fhrows, 'ad_import')};
-    	$@ and die "DBD::AnyData was unable to load the file:\n$@";
-    #Do not call the table 'import' or it will magically fail!
-
-    #Determine the headings:
-    my $sth = $addbh->prepare("SELECT * FROM csvimport LIMIT 1");
-    $sth->execute();
-    $this->{names} = $sth->{NAME};
-    $sth->finish();
-
-    #Save the dbh for later
-    $this->{addbh} = $addbh;
-
-    #Open the main reader statement handle.
-    $this->{sth} = $addbh->prepare("SELECT * FROM csvimport");
-    $this->{sth}->execute();
+    #Stash the headings from the first row:
+    $this->{names} = shift(@allrows);
+    #Now we can start reading values from row 0
+    $this->{row_cursor} = 0;
 }
 
 #get_header and get_columns just use the default implementations
@@ -111,34 +94,44 @@ sub get_next_row
 {
     reader(my $this = shift);
 
-    my $sth = $this->{sth};
-
-    $this->{sth}->fetchrow_arrayref();
+    #It's all pre-parsed so just spit out the next row.
+    $this->{allrows}->[$this->{row_cursor}++];
 }
 
 sub get_all_barcodes
 {
     reader(my $this = shift);
 
-    my $addbh = $this->{addbh};
-    $addbh->selectcol_arrayref("SELECT barcode FROM csvimport");
+    #This was significantly easier with DBD::AnyData
+    #For completeness, deal with the case where barcodes are not on col 0
+    my $barcode_col = -1;
+    my @names = @{$this->{names}};
+    for(my $nn = 0; $nn < @names; $nn++)
+    {
+	if(lc($names[$nn]) eq 'barcode')
+	{
+	    $barcode_col = $nn;
+	    last;
+	}
+    }
+
+    if($barcode_col < 0)
+    {
+	die "No barcode column in the uploaded file.\n";
+    }
+
+    [ map {$_->[$barcode_col]} @{$this->{allrows}} ];
 }
 
 sub flush
 {
     my $this = shift();
 
-    #Close $this->{sth} if it is open
-    if($this->{sth})
-    {
-	$this->{sth}->finish();
-    }
-    
     $this->SUPER::flush();
 }
 
 #Writer bits...
- 
+
 #set_header, set_column_names and set_attr defer to superclass
 #I'll print the whole header when the first row gets added.
 
@@ -221,7 +214,7 @@ sub print_header_stuff
 	    my $attrs_for_col = $this->{attrs}->[$nn];
 	    my $attr_string = $attrs_for_col->{compulsory} ? '*' : '';
 	    $attr_string .= $attrs_for_col->{type} || '';
-	    
+
 	    push @attrs, $attr_string;
 	}
 	print $ios combine(@attrs);
