@@ -24,8 +24,10 @@ collectfiles ()
 {
     echo "Copying template and removing .snv gunk"
     rm -rvf ${BUILDDIR}
-    cp -rv --no-preserve=all ${BUILDDIR}"_template" ${BUILDDIR}
+    cp -rv ${BUILDDIR}"_template" ${BUILDDIR}
     find ${BUILDDIR} -name '.svn' -print0 | xargs -0 rm -rvf
+
+    mkdir -p $CGIDIR $SHAREDDIR $WWWDIR $DOCDIR
 
     echo "Putting *cgi *pm TableIO plugin in place"
     install -v -g root -o root -m644 ../*.pm $CGIDIR
@@ -76,7 +78,7 @@ collectfiles ()
 #Run the file collector for the Deb package
 BUILDDIR=bio-linux-handlebar
 CGIDIR=$BUILDDIR/usr/lib/cgi-bin/handlebar/
-WWWDIR=$BUILDDIR/var/www/handlebar/
+WWWDIR=$BUILDDIR/var/www/html/handlebar/
 SHAREDDIR=$BUILDDIR/usr/share/handlebar/
 DOCDIR=$BUILDDIR/usr/share/doc/handlebar/
 collectfiles
@@ -88,7 +90,7 @@ WWWDIR=$BUILDDIR/www/
 SHAREDDIR=$BUILDDIR/share/
 DOCDIR=$BUILDDIR/doc/
 collectfiles
-ln -s request_barcodes.cgi $CGIDIR/bc.cgi 
+ln -s request_barcodes.cgi $CGIDIR/bc.cgi
 
 echo "Removing old .deb and tarball"
 rm bio-linux-handlebar*.deb
